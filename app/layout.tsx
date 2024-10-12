@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { TRPCProvider } from "@/components/ui/trpc-provider";
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
-import { Card } from "@/components/ui/card"
+import { ClerkProvider } from '@clerk/nextjs'
 import Header from "@/components/ui/header";
 
 const geistSans = localFont({
