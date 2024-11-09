@@ -22,7 +22,7 @@ export function LoyaltyPassGenerator() {
     expiration: "unlimited",
     startDate: "",
     endDate: "",
-    stampCount: 8,
+    stampCount: 5,
     initialStamps: 0,
     backgroundColor: "#000000",
     textColor: "#ffffff",
@@ -160,15 +160,29 @@ export function LoyaltyPassGenerator() {
               Background Color
             </Label>
             <div className="flex items-center space-x-4 mt-2">
-              <Input
-                id="backgroundColor"
-                type="color"
-                value={formData.backgroundColor}
-                onChange={(e) =>
-                  handleInputChange("backgroundColor", e.target.value)
-                }
-                className="w-16 h-16 p-1 rounded-full"
-              />
+              <div className="relative w-16 h-16">
+                <Input
+                  id="backgroundColor"
+                  type="color"
+                  value={formData.backgroundColor}
+                  onChange={(e) =>
+                    handleInputChange("backgroundColor", e.target.value)
+                  }
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  style={{ zIndex: 10 }}
+                />
+                <div
+                  className="w-full h-full rounded-full border-2 border-gray-300"
+                  style={{ backgroundColor: formData.backgroundColor }}
+                  onClick={() => {
+                    const colorInput = document.getElementById(
+                      "backgroundColor"
+                    ) as HTMLInputElement;
+                    colorInput?.click();
+                  }}
+                />
+              </div>
+
               <span className="font-medium">{formData.backgroundColor}</span>
             </div>
           </div>
@@ -177,13 +191,30 @@ export function LoyaltyPassGenerator() {
               Text Color
             </Label>
             <div className="flex items-center space-x-4 mt-2">
-              <Input
-                id="textColor"
-                type="color"
-                value={formData.textColor}
-                onChange={(e) => handleInputChange("textColor", e.target.value)}
-                className="w-16 h-16 p-1 rounded-full"
-              />
+              <div className="relative w-16 h-16">
+                <Input
+                  id="textColor"
+                  type="color"
+                  value={formData.textColor}
+                  onChange={(e) =>
+                    handleInputChange("textColor", e.target.value)
+                  }
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  style={{ zIndex: 10 }}
+                />
+
+                <div
+                  className="w-full h-full rounded-full border-2 border-gray-300"
+                  style={{ backgroundColor: formData.textColor }}
+                  onClick={() => {
+                    const colorInput = document.getElementById(
+                      "textColor"
+                    ) as HTMLInputElement;
+                    colorInput?.click();
+                  }}
+                />
+              </div>
+
               <span className="font-medium">{formData.textColor}</span>
             </div>
           </div>
