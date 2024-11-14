@@ -1,6 +1,7 @@
 import React from "react";
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import { Card } from "@/components/ui/card"
+import { Sign } from "crypto";
 
 export default function Header() {
   return (
@@ -25,7 +26,11 @@ export default function Header() {
           <button className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition-opacity">
             Commencer
           </button>
-        </div>
+          <SignInButton/>
+          <SignedIn/>
+          <SignedOut/>
+          <UserButton/>
+         </div>
       </header>
             </nav>
     
