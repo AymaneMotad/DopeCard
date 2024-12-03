@@ -14,6 +14,8 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': path.resolve('./'), // This maps '@/' to the project root
     };
+
+    
     return config;
   },
 };
