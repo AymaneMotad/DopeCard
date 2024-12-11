@@ -51,6 +51,11 @@ export function LoyaltyPassGenerator() {
     }
   };
 
+  const handleSubmit = () => {
+    // Handle form submission logic here
+    console.log("Form Data Submitted:", formData);
+  };
+
   const steps = [
     {
       title: "Settings",
@@ -344,32 +349,29 @@ export function LoyaltyPassGenerator() {
             className="flex flex-col items-center relative z-10 w-1/3"
           >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                index <= currentStep
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${index <= currentStep
                   ? "bg-primary text-primary-foreground"
                   : "bg-gray-100"
-              } shadow-lg transition-all duration-300 ease-in-out`}
+                } shadow-lg transition-all duration-300 ease-in-out`}
             >
               {index < currentStep ? (
                 <Check className="w-6 h-6" />
               ) : (
                 <span
-                  className={`text-lg font-bold ${
-                    index <= currentStep
+                  className={`text-lg font-bold ${index <= currentStep
                       ? "text-primary-foreground"
                       : "text-gray-400"
-                  }`}
+                    }`}
                 >
                   {index + 1}
                 </span>
               )}
             </div>
             <div
-              className={`mt-4 text-center transition-all duration-300 ease-in-out ${
-                index <= currentStep
+              className={`mt-4 text-center transition-all duration-300 ease-in-out ${index <= currentStep
                   ? "text-primary scale-110"
                   : "text-gray-400"
-              }`}
+                }`}
             >
               <h3 className="text-sm font-bold mb-1">{step.title}</h3>
               <span className="text-xs">{getStepDescription(index)}</span>
@@ -387,16 +389,14 @@ export function LoyaltyPassGenerator() {
 
   const PhoneMockup = ({ children }: { children: React.ReactNode }) => (
     <div
-      className={`relative w-[280px] h-[580px] ${
-        previewDevice === "iphone"
+      className={`relative w-[280px] h-[580px] ${previewDevice === "iphone"
           ? 'bg-gray-800 p-2 rounded-[55px] before:content-[""] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-24 before:h-7 before:bg-black before:rounded-b-3xl'
           : "bg-gray-800 p-2"
-      }  shadow-xl`}
+        }  shadow-xl`}
     >
       <div
-        className={`w-full h-full bg-white ${
-          previewDevice === "iphone" ? "rounded-[48px]" : " "
-        } overflow-hidden shadow-inner`}
+        className={`w-full h-full bg-white ${previewDevice === "iphone" ? "rounded-[48px]" : " "
+          } overflow-hidden shadow-inner`}
       >
         {children}
       </div>
@@ -432,11 +432,10 @@ export function LoyaltyPassGenerator() {
             {[...Array(formData.stampCount)].map((_, i) => (
               <div
                 key={i}
-                className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border-2 ${
-                  i < formData.initialStamps
+                className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border-2 ${i < formData.initialStamps
                     ? `bg-primary text-primary-foreground`
                     : "border-gray-300"
-                }`}
+                  }`}
               >
                 {i < formData.initialStamps && formData.unlockedStampImage ? (
                   <img
@@ -489,15 +488,20 @@ export function LoyaltyPassGenerator() {
             >
               Previous
             </Button>
-            <Button
-              onClick={() =>
-                setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1))
-              }
-              disabled={currentStep === steps.length - 1}
-              className="px-6 py-2"
-            >
-              {currentStep === steps.length - 1 ? "Finish" : "Next"}
-            </Button>
+            {currentStep === steps.length - 1 ? (
+              <Button onClick={handleSubmit} className="px-6 py-2">
+                Finish
+              </Button>
+            ) : (
+              <Button
+                onClick={() =>
+                  setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1))
+                }
+                className="px-6 py-2"
+              >
+                Next
+              </Button>
+            )}
           </div>
         </div>
       </div>

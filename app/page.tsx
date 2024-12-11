@@ -3,7 +3,14 @@ import { ArrowRight, QrCode, Smartphone, Gift, CheckCircle, Zap } from 'lucide-r
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-const FeatureCard = ({ icon, title, description, color }) => (
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
+}
+
+const FeatureCard = ({ icon, title, description, color }: FeatureCardProps) => (
   <div className="bg-white rounded-lg shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
     <div className={`mb-4 text-${color}-600`}>{icon}</div>
     <h3 className="text-xl font-semibold mb-2">{title}</h3>
@@ -11,7 +18,12 @@ const FeatureCard = ({ icon, title, description, color }) => (
   </div>
 );
 
-const FAQItem = ({ question, answer }) => (
+interface FAQItemProps {
+  question: string;
+  answer: string;
+}
+
+const FAQItem = ({ question, answer }: FAQItemProps) => (
   <div className="border-b border-gray-200 pb-4">
     <h4 className="text-lg font-semibold mb-2">{question}</h4>
     <p className="text-gray-600">{answer}</p>

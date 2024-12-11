@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../trpc";
 import { z } from "zod";
-import db from "@/db/drizzle"; // Your DB connection file
-import { passRegistrations ,users } from "@/db/schema"; // Import the users schema
+import db from "../../db/drizzle"; // Your DB connection file
+import { passRegistrations ,users } from "../../db/schema"; // Import the users schema
 //import { generatePass } from '@/utils/pass-generation/pass-generation';
 import { generatePass } from '../../app/utils/pass-generation/pass-generation';
 import path from 'path';
@@ -66,7 +66,7 @@ export const usersRouter = router({
     }))
     .mutation(async ({ input }) => {
       // Add pass registration logic here
-      const result = await passRegistrations.insert(input);
+      const result = await db.insert(passRegistrations).values(input);
       return result;
     }),
 });
