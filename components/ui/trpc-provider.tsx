@@ -8,15 +8,25 @@ import { httpBatchLink } from "@trpc/client";
 import { trpc } from "../../server/client";
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      // In browser
+      return '';
+    }
+    if (process.env.VERCEL_URL) {
+      // In Vercel
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    return `http://localhost:${process.env.PORT ?? 3000}`; // Fallback for local dev
+  };
+
   const [queryClient] = useState(() => new QueryClient({}));
   const [trpcClient] = useState(
-    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL as string) || "http://localhost:3000";
-    const fullUrl = `${baseUrl}/api/trpc`;
     trpc.createClient({
       links: [
         httpBatchLink({
           //url: `${process.env.NEXT_PUBLIC_APP_URL}/api/trpc`,
-          url: fullUrl
+          url: `${getBaseUrl()}/api/trpc`,
         }),
       ],
     })
