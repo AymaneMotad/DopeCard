@@ -1,5 +1,5 @@
 "use client";
-import { getBaseUrl } from "app/utils/getBaseUrl";
+
 import { useState } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,8 +13,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`, //helper function
-          //url: `${process.env.NEXT_PUBLIC_APP_URL}/api/trpc`,
+          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/trpc`,
         }),
       ],
     })
