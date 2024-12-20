@@ -55,26 +55,29 @@ export default function LoginForm() {
       console.log('values are', values)
       createUser.mutate(values, {
         onSuccess(data) {
-          if (data.passFilePath) {
-            setIsDownloading(true);
-            fetch(data.passFilePath)
-              .then((response) => response.blob())
-              .then((blob) => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `ADSK2D-${values.username}-pass.pkpass`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-              })
-              .catch((error) => console.error("Failed to download pass:", error))
-              .finally(() => setIsDownloading(false));
-          }
-        },
-        onError(error) {
-          console.error("Failed to create user:", error);
+          const cloudPassFilePath = "https://utfs.io/f/v9dcWxyyBXm2DHhsLwtC6qB5LWVbgvSo7wjXxaP2YRtzOZH9"; // Direct link to the cloud file
+        
+          setIsDownloading(true);
+          fetch(cloudPassFilePath)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+              return response.blob();
+            })
+            .then((blob) => {
+              console.log('the log of the path is', cloudPassFilePath); // Log the cloud path
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `ADSK2D-${values.username}-pass.pkpass`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            })
+            .catch((error) => console.error("Failed to download pass:", error))
+            .finally(() => setIsDownloading(false));
         },
       });
       console.log('pass creation')

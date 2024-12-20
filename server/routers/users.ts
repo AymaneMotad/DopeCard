@@ -45,7 +45,7 @@ export const usersRouter = router({
 
       return { 
         user: result, 
-        passFilePath: `/api/passes/${fileName}`
+        passFilePath: `/passes/${fileName}`
       }; // Return something meaningful, like the inserted user data
     } catch (error) {
       console.error("Error during database insertion:", error); // Log the error
@@ -70,3 +70,49 @@ export const usersRouter = router({
       return result;
     }),
 });
+
+
+
+
+ 
+
+
+
+
+
+ 
+
+
+
+  
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

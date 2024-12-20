@@ -60,47 +60,35 @@ export async function generatePass(userId: string) {
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: 'pass.com.dopecard.stamps',
-      teamIdentifier: 'DTWNQT4JQL',  // Your Team Identifier
+      teamIdentifier: 'DTWNQT4JQL',
       organizationName: 'Dopecard',
       description: 'Dopecard Stamp',
-      serialNumber: `ADSK2D-${userId}`, // Unique serial number
+      serialNumber: `ADSK2D-${userId}`,
       generic: {
         primaryFields: [
           {
             key: 'stamps',
             label: 'Stamps Collected',
-            value: 5, // Example: Number of stamps collected
+            value: 5,
           },
         ],
         secondaryFields: [
           {
             key: 'reward',
             label: 'Reward Progress',
-            value: '5/10', // Example: Progress toward a reward
-          },
-        ],
-        auxiliaryFields: [
-          {
-            key: 'expiry',
-            label: 'Expires',
-            value: '2024-12-31', // Example: Expiration date
-          },
-        ],
-        backFields: [
-          {
-            key: 'terms',
-            label: 'Terms and Conditions',
-            value: 'Collect 10 stamps to earn a free coffee!',
+            value: '5/10',
           },
         ],
       },
       barcode: {
-        message: userId, // Unique barcode value (userId in this case)
+        message: userId,
         format: 'PKBarcodeFormatQR',
         messageEncoding: 'iso-8859-1',
       },
+      logoText: 'Dopecard', // Text that appears next to the logo
       logoURL: 'https://example.com/logo.png', // URL to your logo
-      backgroundColor: 'rgb(255, 255, 255)', // Background color
+      backgroundColor: 'rgb(255, 255, 255)', // White background
+      foregroundColor: 'rgb(0, 0, 0)', // Black text
     };
 
     // Create a new PKPass instance using buffers for static files
@@ -128,12 +116,16 @@ export async function generatePass(userId: string) {
 
     // Save the .pkpass file to disk
     const outputDir = path.join(process.cwd(), 'output');
+    console.log('console loggging process cwd', process.cwd())
+    console.log(fs.existsSync(outputDir))
+    
     
     if (!fs.existsSync(outputDir)){
         fs.mkdirSync(outputDir);
     }
 
     const filePath = path.join(outputDir, `ADSK2D-${userId}-pass.pkpass`);
+    console.log('file path is',filePath)
     fs.writeFileSync(filePath, buffer); 
 
     console.log('Pass generated successfully!');
