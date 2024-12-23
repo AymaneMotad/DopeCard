@@ -39,51 +39,36 @@ export default function LoginForm() {
 
   const createUser = trpc.users.create.useMutation()
   const [isDownloading, setIsDownloading] = useState(false);
-    // 1. Define your form.
-    const form = useForm<z.infer<typeof formSchema>>({
+      // 1. Define your form.
+      const form = useForm<z.infer<typeof formSchema>>({
       resolver: zodResolver(formSchema),
       defaultValues: {
-        username: "",
+          username: "",
       },
-    })
-   
-    // 2. Define a submit handler.
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+      })
+  
+      // 2. Define a submit handler.
+      async function onSubmit(values: z.infer<typeof formSchema>) {
       if (isDownloading) return;
-      // Do something with the form values.
-      // ✅ This will be type-safe and validated.
+  
       console.log('values are', values)
       createUser.mutate(values, {
-        onSuccess(data) {
-          const cloudPassFilePath = "https://utfs.io/f/v9dcWxyyBXm2DHhsLwtC6qB5LWVbgvSo7wjXxaP2YRtzOZH9"; // Direct link to the cloud file
-        
+          onSuccess(data) {
+  
           setIsDownloading(true);
-          fetch(cloudPassFilePath)
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-              }
-              return response.blob();
-            })
-            .then((blob) => {
-              console.log('the log of the path is', cloudPassFilePath); // Log the cloud path
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `ADSK2D-${values.username}-pass.pkpass`;
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-            })
-            .catch((error) => console.error("Failed to download pass:", error))
-            .finally(() => setIsDownloading(false));
-        },
-      });
+          const blob = new Blob([data.passBuffer], { type: 'application/vnd.apple.pkpass' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `ADSK2D-${values.username}-pass.pkpass`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          }
+      }).finally(()=> setIsDownloading(false))
       console.log('pass creation')
-
-    
-    }
+      }
   
 
   return (
