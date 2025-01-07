@@ -151,10 +151,10 @@ export async function generatePass(userId: string) {
       console.log('Pass generated successfully!');
 
       // Save buffer to a file (optional for testing) 
-      const filePath = path.join(process.cwd(), 'test.pkpass');
-      fs.writeFileSync(filePath, buffer);
+      //const filePath = path.join(process.cwd(), 'test.pkpass');
+      //fs.writeFileSync(filePath, buffer);
       
-      console.log(`Buffer written to file:${filePath}`);
+      //console.log(`Buffer written to file:${filePath}`);
 
       return buffer; // Return the buffer directly 
 
