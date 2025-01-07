@@ -1,125 +1,165 @@
 const passkit = require('passkit-generator');
-const axios = require('axios')
+const axios = require('axios');
+import * as fs from 'fs';
+import * as path from 'path';
 
 export async function generatePass(userId: string) {
-  console.log('Starting to initiate the pass creation');
+    console.log('Starting to initiate the pass creation');
 
-  const certUrl = 'https://utfs.io/f/v9dcWxyyBXm2miFx3bCpbOAKCumMZX3vy8cLhEznF9o2tdT6';
-  const wwdrUrl = 'https://utfs.io/f/v9dcWxyyBXm23y1zJZBUJTKDh8yoOZc6HWrbfYx4CqnVS5wl';
-  const privateKeyUrl = 'https://utfs.io/f/v9dcWxyyBXm2iv3e8rjFZiEzRGPkYrmA4yCnvhLJXf81S7s2';
+    const certUrl = 'https://utfs.io/f/v9dcWxyyBXm21Gwze4c7l6M8cWvkzGsuYqT9a1SpxhnLOrB4';
+    const wwdrUrl = 'https://utfs.io/f/v9dcWxyyBXm2uRC4Dg3rFvDKcpQeTOCk1SUmysgVLA7R8fME';
+    const privateKeyUrl = 'https://utfs.io/f/v9dcWxyyBXm2HnAiB7kqANS5hgWbHv3yTOp0w7KoRPaLVBCx';
 
-  let p12Buffer, wwdrBuffer, privateKey;
+    let p12Buffer, wwdrBuffer, privateKey;
 
-  try {
-  // Fetch the certificates using axios
-  const [certResponse, wwdrResponse, privateKeyResponse] = await Promise.all([
-      axios.get(certUrl, { responseType: 'arraybuffer' }),
-      axios.get(wwdrUrl, { responseType: 'arraybuffer' }),
-      axios.get(privateKeyUrl, { responseType: 'text' }),
-  ]);
+    try {
+        // Fetch certificates using axios
+        console.log('Fetching certificates...');
+        const [certResponse, wwdrResponse, privateKeyResponse] = await Promise.all([
+            axios.get(certUrl, { responseType: 'arraybuffer' }),
+            axios.get(wwdrUrl, { responseType: 'arraybuffer' }),
+            axios.get(privateKeyUrl, { responseType: 'text' }),
+        ]);
 
-  if (certResponse.status !== 200) {
-      throw new Error(`Failed to fetch certificate: ${certResponse.status} ${certResponse.statusText}`);
-  }
-  if (wwdrResponse.status !== 200) {
-      throw new Error(`Failed to fetch WWDR certificate: ${wwdrResponse.status} ${wwdrResponse.statusText}`);
-  }
-  if (privateKeyResponse.status !== 200) {
-      throw new Error(`Failed to fetch private key: ${privateKeyResponse.status} ${privateKeyResponse.statusText}`);
-  }
+        // Validate responses
+        if (certResponse.status !== 200 || wwdrResponse.status !== 200 || privateKeyResponse.status !== 200) {
+            throw new Error('Failed to fetch one or more certificates');
+        }
 
-  p12Buffer = Buffer.from(certResponse.data);
-  wwdrBuffer = Buffer.from(wwdrResponse.data);
-  privateKey = privateKeyResponse.data;
+        p12Buffer = Buffer.from(certResponse.data);
+        wwdrBuffer = Buffer.from(wwdrResponse.data);
+        privateKey = privateKeyResponse.data;
 
+        // Validate buffers
+        if (p12Buffer.length === 0 || wwdrBuffer.length === 0 || !privateKey) {
+            throw new Error('One or more buffers are empty');
+        }
+        
+        console.log('Certificates fetched and validated successfully.');
 
-      // Validate buffers
-      if (p12Buffer.length === 0) {
-          throw new Error('P12 certificate buffer is empty');
-      }
-      if (wwdrBuffer.length === 0) {
-          throw new Error('WWDR certificate buffer is empty');
-      }
-      if (!privateKey) {
-          throw new Error('Private key is empty');
-      }
-
-      // URLs for the logo and icon
-  const logoUrl = 'https://utfs.io/f/v9dcWxyyBXm2LPAiLQGidC9sUyKnGjQvFrToaVE8eWm7XNOk';
-  const iconUrl = 'https://utfs.io/f/v9dcWxyyBXm2O1AhFkhncMqa9p0mnb2AHzQrSBdLTXRoN1WE';
-
-      // Fetch files from external URLs
-      const [logoResponse, iconResponse] = await Promise.all([
-          axios.get(logoUrl, { responseType: 'arraybuffer' }),
-          axios.get(iconUrl, { responseType: 'arraybuffer' }),
-      ]);
-  
-      const logoBuffer = Buffer.from(logoResponse.data);
-      const iconBuffer = Buffer.from(iconResponse.data);
-  
-      // Create pass.json content
-      const passJson = {
-      formatVersion: 1,
-      passTypeIdentifier: 'pass.com.dopecard.stamps',
-      teamIdentifier: 'DTWNQT4JQL',
-      organizationName: 'Dopecard',
-      description: 'Dopecard Stamp',
-      serialNumber: `ADSK2D-${userId}`,
-      generic: {
-          primaryFields: [
-          {
-              key: 'stamps',
-              label: 'Stamps Collected',
-              value: 5,
-          },
-          ],
-          secondaryFields: [
-          {
-              key: 'reward',
-              label: 'Reward Progress',
-              value: '5/10',
-          },
-          ],
-      },
-      barcode: {
-          message: userId,
-          format: 'PKBarcodeFormatQR',
-          messageEncoding: 'iso-8859-1',
-      },
-      logoText: 'Dopecard', // Text that appears next to the logo
-      logoURL: 'https://example.com/logo.png', // URL to your logo
-      backgroundColor: 'rgb(255, 255, 255)', // White background
-      foregroundColor: 'rgb(0, 0, 0)', // Black text
+        // Fetch all assets
+        const assetUrls = {
+          artwork: 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
+          artwork2x: 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
+          artwork3x: 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
+          icon: 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
+          icon2x: 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
+          logo: 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+          logo2x: 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
+          secondaryLogo: 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+          secondaryLogo2x: 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71'
       };
 
-      // Create a new PKPass instance using buffers for static files
-      const pass = new passkit.PKPass({
-          "pass.json": Buffer.from(JSON.stringify(passJson)), // Pass data as buffer
-          "logo.png": logoBuffer,
-          "icon.png": iconBuffer,
-      }, {
-          wwdr: wwdrBuffer,
-          signerCert: p12Buffer,
-          signerKey: privateKey,
-          signerKeyPassphrase: 'sugoi', // If private key is encrypted
-      });
-  
-      // Localize content and set barcode (this is optional)
-      pass.localize("en", { description: 'Dopecard Stamp' });
-      pass.setBarcodes([{
-          message: userId,
-          format: 'PKBarcodeFormatQR',
-          messageEncoding: 'iso-8859-1',
-      }]);
-  
-      // Generate the .pkpass files
-      const buffer = await pass.getAsBuffer();
-  
-      console.log('Pass generated successfully!');
-      return buffer; // Return the buffer directly
+        console.log('Fetching assets...');
+        
+        // Fetch all assets concurrently
+        const responses = await Promise.all(
+            Object.values(assetUrls).map(url => axios.get(url, { responseType: 'arraybuffer' }))
+        );
 
-} catch (error) {
-  console.error('Error generating pass:', error);
-  throw new Error(`Pass generation failed: ${error.message}`);
-}
+        // Create buffers for each asset
+        const [
+            artworkBuffer,
+            artwork2xBuffer,
+            artwork3xBuffer,
+            iconBuffer,
+            icon2xBuffer,
+            logoBuffer,
+            logo2xBuffer,
+            secondaryLogoBuffer,
+            secondaryLogo2xBuffer
+        ] = responses.map(response => Buffer.from(response.data));
+
+        // Log buffer sizes
+        console.log('Buffer sizes:', {
+          artworkBuffer: artworkBuffer.length,
+          artwork2xBuffer: artwork2xBuffer.length,
+          artwork3xBuffer: artwork3xBuffer.length,
+          iconBuffer: iconBuffer.length,
+          icon2xBuffer: icon2xBuffer.length,
+          logoBuffer: logoBuffer.length,
+          logo2xBuffer: logo2xBuffer.length,
+          secondaryLogoBuffer: secondaryLogoBuffer.length,
+          secondaryLogo2xBuffer: secondaryLogo2xBuffer.length
+      });
+
+        // Verify that none of the buffers are empty
+        if (
+            artworkBuffer.length === 0 ||
+            artwork2xBuffer.length === 0 ||
+            artwork3xBuffer.length === 0 ||
+            iconBuffer.length === 0 ||
+            icon2xBuffer.length === 0 ||
+            logoBuffer.length === 0 ||
+            logo2xBuffer.length === 0 ||
+            secondaryLogoBuffer.length === 0 ||
+            secondaryLogo2xBuffer.length === 0
+        ) {
+            throw new Error('One or more asset buffers are empty');
+        }
+
+        console.log('Assets fetched successfully.');
+
+        const passJson = {
+          formatVersion: 1,
+          serialNumber: `ADSK2D`,
+          passTypeIdentifier: 'pass.com.dopecard.passmaker',
+          teamIdentifier: 'DTWNQT4JQL',
+          description: 'Minimal Dopecard Pass',
+          organizationName: 'Dopecard',
+          eventTicket: {
+             primaryFields: [
+              {
+                key:"guest",
+                label:"Guest",
+                 value: "Guest"
+              }
+             ]
+          }
+  
+      };
+
+      console.log('pass.json created:', JSON.stringify(passJson, null, 2));
+
+      // Create a new PKPass instance using buffers for static files 
+      const pass = new passkit.PKPass(
+          {
+              "pass.json": Buffer.from(JSON.stringify(passJson)),// Pass data as buffer 
+              "artwork.png": artworkBuffer,
+              "artwork@2x.png": artwork2xBuffer,
+              "artwork@3x.png": artwork3xBuffer,
+              "icon.png": iconBuffer,
+              "icon@2x.png": icon2xBuffer,
+              "logo.png": logoBuffer,
+              "logo@2x.png": logo2xBuffer,
+              "secondaryLogo.png": secondaryLogoBuffer,
+              "secondaryLogo@2x.png": secondaryLogo2xBuffer,
+          },
+          {
+              wwdr : wwdrBuffer,
+              signerCert : p12Buffer,
+              signerKey : privateKey,
+              signerKeyPassphrase : 'sugoi',// If private key is encrypted 
+          }
+      );
+
+      console.log("PKPass instance created successfully.");
+
+      // Generate the .pkpass files 
+      const buffer = await pass.getAsBuffer();
+
+      console.log('Pass generated successfully!');
+
+      // Save buffer to a file (optional for testing) 
+      const filePath = path.join(process.cwd(), 'test.pkpass');
+      fs.writeFileSync(filePath, buffer);
+      
+      console.log(`Buffer written to file:${filePath}`);
+
+      return buffer; // Return the buffer directly 
+
+    } catch (error) {
+      console.error('Error generating pass:', error);
+      throw new Error(`Pass generation failed:${error.message}`);
+    }
 }

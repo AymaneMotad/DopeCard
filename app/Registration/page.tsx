@@ -49,25 +49,47 @@ export default function LoginForm() {
   
       // 2. Define a submit handler.
       async function onSubmit(values: z.infer<typeof formSchema>) {
-      if (isDownloading) return;
-  
-      console.log('values are', values)
-      createUser.mutate(values, {
+        if (isDownloading) return;
+    
+        console.log('Form submission initiated with values:', values);
+        
+        createUser.mutate(values, {
           onSuccess(data) {
-  
-          setIsDownloading(true);
-          const blob = new Blob([data.passBuffer], { type: 'application/vnd.apple.pkpass' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `ADSK2D-${values.username}-pass.pkpass`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          }
-      }).finally(()=> setIsDownloading(false))
-      console.log('pass creation')
+            setIsDownloading(true);
+    
+            // Check buffer size
+            console.log('The data is:', data);
+            const passBuffer = data.passBuffer.data; // Accessing buffer correctly
+            console.log('Received pass buffer size:', passBuffer.length); // Log buffer size
+    
+            // Create a blob from the pass buffer
+            const blob = new Blob([passBuffer], { type: 'application/vnd.apple.pkpass' });
+            console.log('Blob created with size:', blob.size); // Log blob size
+    
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(blob);
+            console.log('Download URL created:', url); // Log download URL
+    
+            // Create an anchor element for downloading
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `onsuccess-${values.username}-pass.pkpass`;
+            document.body.appendChild(a);
+            
+            console.log('Initiating download...');
+            a.click(); // Trigger the download
+            
+            window.URL.revokeObjectURL(url); // Clean up the URL object
+            document.body.removeChild(a); // Remove the anchor from the DOM
+            
+            console.log('Download initiated and link removed from DOM.');
+          },
+          onError(error) {
+            console.error('Error during user creation:', error); // Log any errors
+          },
+        }).finally(() => setIsDownloading(false));
+        
+        console.log('Pass creation process finished.');
       }
   
 
