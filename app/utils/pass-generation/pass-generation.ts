@@ -3,7 +3,7 @@ const axios = require('axios');
 import * as fs from 'fs';
 import * as path from 'path';
 
-export async function generatePass(userId: string) {
+export async function generatePass(userId: string, stampCount: number = 0) {
     console.log('Starting to initiate the pass creation');
 
     const certUrl = 'https://utfs.io/f/v9dcWxyyBXm21Gwze4c7l6M8cWvkzGsuYqT9a1SpxhnLOrB4';
@@ -39,16 +39,16 @@ export async function generatePass(userId: string) {
 
         // Fetch all assets
         const assetUrls = {
-          artwork: 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
-          artwork2x: 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
-          artwork3x: 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
-          icon: 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
-          icon2x: 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
-          logo: 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
-          logo2x: 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
-          secondaryLogo: 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
-          secondaryLogo2x: 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71'
-      };
+            artwork: 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
+            artwork2x: 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
+            artwork3x: 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
+            icon: 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
+            icon2x: 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
+            logo: 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+            logo2x: 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
+            secondaryLogo: 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+            secondaryLogo2x: 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71'
+        };
 
         console.log('Fetching assets...');
         
@@ -72,16 +72,16 @@ export async function generatePass(userId: string) {
 
         // Log buffer sizes
         console.log('Buffer sizes:', {
-          artworkBuffer: artworkBuffer.length,
-          artwork2xBuffer: artwork2xBuffer.length,
-          artwork3xBuffer: artwork3xBuffer.length,
-          iconBuffer: iconBuffer.length,
-          icon2xBuffer: icon2xBuffer.length,
-          logoBuffer: logoBuffer.length,
-          logo2xBuffer: logo2xBuffer.length,
-          secondaryLogoBuffer: secondaryLogoBuffer.length,
-          secondaryLogo2xBuffer: secondaryLogo2xBuffer.length
-      });
+            artworkBuffer: artworkBuffer.length,
+            artwork2xBuffer: artwork2xBuffer.length,
+            artwork3xBuffer: artwork3xBuffer.length,
+            iconBuffer: iconBuffer.length,
+            icon2xBuffer: icon2xBuffer.length,
+            logoBuffer: logoBuffer.length,
+            logo2xBuffer: logo2xBuffer.length,
+            secondaryLogoBuffer: secondaryLogoBuffer.length,
+            secondaryLogo2xBuffer: secondaryLogo2xBuffer.length
+        });
 
         // Verify that none of the buffers are empty
         if (
@@ -100,68 +100,116 @@ export async function generatePass(userId: string) {
 
         console.log('Assets fetched successfully.');
 
+        // Create the pass JSON
         const passJson = {
-          formatVersion: 1,
-          serialNumber: `ADSK2D`,
-          passTypeIdentifier: 'pass.com.dopecard.passmaker',
-          teamIdentifier: 'DTWNQT4JQL',
-          description: 'Minimal Dopecard Pass',
-          organizationName: 'Dopecard',
-          eventTicket: {
-             primaryFields: [
-              {
-                key:"guest",
-                label:"Guest",
-                 value: "Guest"
-              }
-             ]
-          }
-  
-      };
+            formatVersion: 1,
+            serialNumber: `COFFEE${userId}`,
+            passTypeIdentifier: 'pass.com.dopecard.passmaker',
+            teamIdentifier: 'DTWNQT4JQL',
+            description: 'Coffee Loyalty Card',
+            organizationName: 'Brew Rewards',
+            logoText: 'Brew Rewards',
+            foregroundColor: 'rgb(255, 255, 255)',
+            backgroundColor: 'rgb(89, 52, 28)',
+            labelColor: 'rgb(255, 240, 220)',
+            storeCard: {
+                headerFields: [
+                    {
+                        key: 'balance',
+                        label: 'STAMPS',
+                        value: `${stampCount}/10`,
+                        textAlignment: 'PKTextAlignmentCenter'
+                    }
+                ],
+                primaryFields: [
+                    {
+                        key: 'offer',
+                        label: 'REWARD STATUS',
+                        value: stampCount >= 10 ? 'FREE COFFEE!' : 'Keep collecting!',
+                        textAlignment: 'PKTextAlignmentCenter'
+                    }
+                ],
+                secondaryFields: [
+                    {
+                        key: 'progress',
+                        label: 'Progress',
+                        value: '☕'.repeat(stampCount) + '○'.repeat(10 - stampCount),
+                        textAlignment: 'PKTextAlignmentCenter'
+                    }
+                ],
+                auxiliaryFields: [
+                    {
+                        key: 'member',
+                        label: 'MEMBER SINCE',
+                        value: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                        textAlignment: 'PKTextAlignmentLeft'
+                    },
+                    {
+                        key: 'status',
+                        label: 'STATUS',
+                        value: stampCount >= 20 ? 'Gold Member' : 'Regular',
+                        textAlignment: 'PKTextAlignmentRight'
+                    }
+                ],
+                backFields: [
+                    {
+                        key: 'terms',
+                        label: 'TERMS AND CONDITIONS',
+                        value: '1. Collect one stamp for each beverage purchase\n2. After 10 stamps, receive a free coffee of your choice\n3. Stamps expire after 6 months of inactivity\n4. Gold Member status unlocks exclusive seasonal drinks'
+                    },
+                    {
+                        key: 'locations',
+                        label: 'PARTICIPATING LOCATIONS',
+                        value: 'Visit our website for a complete list of locations where you can collect and redeem stamps.'
+                    }
+                ]
+            },
+            barcode: {
+                message: `USER${userId}`,
+                format: 'PKBarcodeFormatQR',
+                messageEncoding: 'iso-8859-1'
+            },
+            suppressStripShine: false,
+            locations: [
+                {
+                    longitude: -122.3748889,
+                    latitude: 37.6189722,
+                    relevantText: "Nearby! Show this pass to collect your stamp."
+                }
+            ]
+        };
 
-      console.log('pass.json created:', JSON.stringify(passJson, null, 2));
+        // Create a new PKPass instance with all the assets and the updated pass.json
+        const pass = new passkit.PKPass({
+            "icon.png": iconBuffer,
+            "icon@2x.png": icon2xBuffer,
+            "logo.png": logoBuffer,
+            "logo@2x.png": logo2xBuffer,
+            "strip.png": artworkBuffer,
+            "strip@2x.png": artwork2xBuffer,
+            "strip@3x.png": artwork3xBuffer,
+            "thumbnail.png": secondaryLogoBuffer,
+            "thumbnail@2x.png": secondaryLogo2xBuffer,
+            "pass.json": Buffer.from(JSON.stringify(passJson))
+        }, {
+            wwdr: wwdrBuffer,
+            signerCert: p12Buffer,
+            signerKey: privateKey,
+            signerKeyPassphrase: 'sugoi'
+        });
 
-      // Create a new PKPass instance using buffers for static files 
-      const pass = new passkit.PKPass(
-          {
-              "pass.json": Buffer.from(JSON.stringify(passJson)),// Pass data as buffer 
-              "artwork.png": artworkBuffer,
-              "artwork@2x.png": artwork2xBuffer,
-              "artwork@3x.png": artwork3xBuffer,
-              "icon.png": iconBuffer,
-              "icon@2x.png": icon2xBuffer,
-              "logo.png": logoBuffer,
-              "logo@2x.png": logo2xBuffer,
-              "secondaryLogo.png": secondaryLogoBuffer,
-              "secondaryLogo@2x.png": secondaryLogo2xBuffer,
-          },
-          {
-              wwdr : wwdrBuffer,
-              signerCert : p12Buffer,
-              signerKey : privateKey,
-              signerKeyPassphrase : 'sugoi',// If private key is encrypted 
-          }
-      );
+        console.log("PKPass instance created successfully.");
 
-      console.log("PKPass instance created successfully.");
+        // Generate the .pkpass file
+        const buffer = await pass.getAsBuffer();
 
-      // Generate the .pkpass files 
-      const buffer = await pass.getAsBuffer();
+        console.log('Pass generated successfully!');
+        console.log('Pass generation buffer size:', buffer.length);
 
-      console.log('Pass generated successfully!');
-      console.log('pass generation buffer from pass-generation.Ts', buffer)
-      console.log('pass generation buffer size', buffer.length)
-
-      // Save buffer to a file (optional for testing) Hadi console logiwha fsh tmshiw production
-      //const filePath = path.join(process.cwd(), 'test.pkpass');
-      //fs.writeFileSync(filePath, buffer);
-      
-      //console.log(`Buffer written to file:${filePath}`);
-
-      return buffer; // Return the buffer directly 
+        return buffer;
 
     } catch (error) {
-      console.error('Error generating pass:', error);
-      throw new Error(`Pass generation failed:${error.message}`);
+        console.error('Error generating pass:', error);
+        throw new Error(`Pass generation failed: ${error.message}`);
     }
 }

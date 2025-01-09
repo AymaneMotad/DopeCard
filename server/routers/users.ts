@@ -39,7 +39,7 @@ export const usersRouter = router({
                 let passBuffer;
                 try {
                     console.log('Start Generating pass');
-                    passBuffer = await generatePass(userId);
+                    passBuffer = await generatePass(userId, 4);
                     console.log('Finished generating pass');
                 } catch (error) {
                     console.error('Error generating the pass:', error);
