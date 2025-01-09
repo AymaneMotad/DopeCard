@@ -56,33 +56,34 @@ export default function LoginForm() {
         createUser.mutate(values, {
           onSuccess(data) {
             setIsDownloading(true);
-    
-            // Check buffer size
+        
+            // Log the entire data object
             console.log('The data is:', data);
-            const passBuffer = data.passBuffer.data; // Accessing buffer correctly
-            console.log('Received pass buffer size:', passBuffer.length); // Log buffer size
-    
-            // Create a blob from the pass buffer
-            const blob = new Blob([passBuffer], { type: 'application/vnd.apple.pkpass' });
-            console.log('Blob created with size:', blob.size); // Log blob size
-    
-            // Create a URL for the blob
-            const url = window.URL.createObjectURL(blob);
-            console.log('Download URL created:', url); // Log download URL
-    
-            // Create an anchor element for downloading
+            
+             // Log the download link
+            const downloadLink = data.downloadLink;
+            console.log('Download link:', downloadLink);
+        
+            // Extract filename from the UploadThing URL
+             const urlParts = new URL(downloadLink);
+            const pathnameParts = urlParts.pathname.split('/');
+            const fileName = pathnameParts[pathnameParts.length - 1];
+            console.log("Filename", fileName)
+        
+        
+            // Create a link element for downloading
             const a = document.createElement("a");
-            a.href = url;
-            a.download = `onsuccess-${values.username}-pass.pkpass`;
+            a.href = downloadLink;
+            a.download = fileName; // Use the extracted filename
             document.body.appendChild(a);
-            
-            console.log('Initiating download...');
-            a.click(); // Trigger the download
-            
-            window.URL.revokeObjectURL(url); // Clean up the URL object
-            document.body.removeChild(a); // Remove the anchor from the DOM
-            
-            console.log('Download initiated and link removed from DOM.');
+        
+            console.log('Initiating download from URL...');
+            a.click();
+        
+            document.body.removeChild(a); // Remove from the DOM
+        
+            console.log('Download initiated from URL and link removed from DOM.');
+            setIsDownloading(false); // Reset the flag after download is initiated.
           },
           onError(error) {
             console.error('Error during user creation:', error); // Log any errors
