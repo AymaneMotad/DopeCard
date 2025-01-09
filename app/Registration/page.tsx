@@ -1,19 +1,17 @@
-"use client"
+"use client";
 
-
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -22,42 +20,37 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { trpc } from "@/server/client"
-import { useState } from "react"
+} from "@/components/ui/form";
+import { trpc } from "@/server/client";
+import { useState } from "react";
 
 
 const formSchema = z.object({
   email: z.string().email(),
   username: z.string().min(2).max(50),
-  phoneNumber: z.string(), // Change to camelCase to match database
+  phoneNumber: z.string(),
 });
 
-
-
 export default function LoginForm() {
-
-  const createUser = trpc.users.create.useMutation()
+  const createUser = trpc.users.create.useMutation();
   const [isDownloading, setIsDownloading] = useState(false);
-      // 1. Define your form.
-      const form = useForm<z.infer<typeof formSchema>>({
-      resolver: zodResolver(formSchema),
-      defaultValues: {
-          username: "",
-      },
-      })
-  
-      // 2. Define a submit handler.
-      async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (isDownloading) return;
-    
-        console.log('Form submission initiated with values:', values);
-        
-        createUser.mutate(values, {
-          onSuccess(data) {
-            setIsDownloading(true);
-        
-            // Log the entire data object
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (isDownloading) return;
+
+    console.log("Form submission initiated with values:", values);
+    setIsDownloading(true);
+
+    createUser.mutate(values, {
+      onSuccess(data) {
+           // Log the entire data object
             console.log('The data is:', data);
             
              // Log the download link
@@ -83,16 +76,18 @@ export default function LoginForm() {
             document.body.removeChild(a); // Remove from the DOM
         
             console.log('Download initiated from URL and link removed from DOM.');
-            setIsDownloading(false); // Reset the flag after download is initiated.
-          },
-          onError(error) {
-            console.error('Error during user creation:', error); // Log any errors
-          },
-        }).finally(() => setIsDownloading(false));
         
-        console.log('Pass creation process finished.');
-      }
-  
+        setIsDownloading(false);
+      },
+      onError(error) {
+         form.setError("root", { message: "Error creating user. Please try again." });
+         console.error("Error during user creation:", error);
+        setIsDownloading(false);
+      },
+    });
+
+    console.log("Pass creation process finished.");
+  }
 
   return (
     <Card className="mx-auto max-w-sm">
@@ -103,80 +98,66 @@ export default function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-      <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid gap-4">
-        <div className="grid gap-2">
-           
-            <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nom d'utilisateur</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-             
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-          </div>
-          <div className="grid gap-2">
-          <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>E-mail</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-             
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-          </div>
-          <div className="grid gap-2">
-          <FormField
-          control={form.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Numéro du téléphone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-             
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-          </div>
-          
-          <Button
-              disabled={isDownloading}
-              className="w-full px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition-opacity"
-            >
-              {isDownloading ? "Téléchargement en cours..." : "S'inscrire"}
-            </Button>
-          
-         
-          {/* <Button variant="outline" className="w-full">
-            Login with Google
-          </Button> */}
-        </div>
-        {/* <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="#" className="underline">
-            Sign up
-          </Link>
-        </div> */}
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom d'utilisateur</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid gap-2">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-mail</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid gap-2">
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Numéro du téléphone</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button
+                disabled={isDownloading || createUser.isLoading}
+                className="w-full px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition-opacity"
+              >
+                {isDownloading || createUser.isLoading ? "Téléchargement en cours..." : "S'inscrire"}
+              </Button>
+              <FormMessage/>
+            </div>
+          </form>
         </Form>
       </CardContent>
     </Card>
-  )
+  );
 }
