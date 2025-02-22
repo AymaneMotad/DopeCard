@@ -24,6 +24,8 @@ import {
 import { trpc } from "@/server/client";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from 'uuid';
+
 
 const formSchema = z.object({
     email: z.string().email(),
@@ -70,68 +72,44 @@ export default function LoginForm() {
               }
         }
      }, [isClient]);
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (downloadState !== "idle") return;
-        if (!platform || platform === "unknown") {
-            form.setError("root", { message: "Platform not detected." });
-            setDownloadState("error");
-            return;
-        }
-
-
-        console.log("Form submission initiated with values:", values);
-        setDownloadState("downloading"); // Start the transition
-
-
-        createUser.mutate({ ...values, platform }, {
-            onSuccess(data) {
-                // Log the entire data object
-                console.log("The data is:", data);
-
-                if (platform === 'ios') {
-                    // Handle iOS pass download
-                    const downloadLink = data.downloadLink;
-                    console.log("Download link:", downloadLink);
-
-                    // Extract filename from the UploadThing URL
-                    const urlParts = new URL(downloadLink);
-                    const pathnameParts = urlParts.pathname.split("/");
-                    const fileName = pathnameParts[pathnameParts.length - 1];
-                    console.log("Filename", fileName);
-
-                    // Create a link element for downloading
-                    const a = document.createElement("a");
-                    a.href = downloadLink;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-
-                    console.log("Initiating download from URL...");
-                    a.click();
-
-                    document.body.removeChild(a);
-
-                    console.log("Download initiated from URL and link removed from DOM.");
-                    setDownloadState("success");
-
-                } else if (platform === 'android') {
-                    const googlePassLink = Buffer.from(data.passBuffer).toString('utf-8')
-                    console.log('Google Pass Link:', googlePassLink);
-                    window.location.href = googlePassLink;
-                    setDownloadState("success");
-                }
-
-            },
-            onError(error) {
-                form.setError("root", {
-                    message: "Erreur lors de la création de l'utilisateur. Veuillez réessayer.",
-                });
-                console.error("Error during user creation:", error);
-                setDownloadState("error");
-            },
-        });
-
-        console.log("Pass creation process finished.");
-    }
+     async function onSubmit(values: z.infer<typeof formSchema>) {
+      if (downloadState !== "idle") return;
+      
+      createUser.mutate({ ...values, platform }, {
+          onSuccess(data) {
+              if (platform === 'ios') {
+                  // Convert base64 back to buffer
+                  const binaryData = atob(data.passData.buffer);
+                  const bytes = new Uint8Array(binaryData.length);
+                  for (let i = 0; i < binaryData.length; i++) {
+                      bytes[i] = binaryData.charCodeAt(i);
+                  }
+                  
+                  const blob = new Blob([bytes], { type: data.passData.mimeType });
+                  const url = window.URL.createObjectURL(blob);
+                  
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'pass.pkpass';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+                  
+                  setDownloadState("success");
+              } else if (platform === 'android') {
+                  window.location.href = data.passData.buffer; // Direct Google Pass URL
+                  setDownloadState("success");
+              }
+          },
+          onError(error) {
+              form.setError("root", {
+                  message: "Error creating user. Please try again.",
+              });
+              setDownloadState("error");
+          }
+      });
+  }
 
     const renderButton = () => {
         if (createUser.isLoading) {

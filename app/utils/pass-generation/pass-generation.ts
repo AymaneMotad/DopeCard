@@ -564,3 +564,4 @@ export async function generateGooglePass(userId: string, stampCount: number = 0)
         throw new Error(`Google Wallet pass generation failed: ${error.message}`);
     }
 }
+
