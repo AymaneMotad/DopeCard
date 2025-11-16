@@ -35,6 +35,19 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# testing
+coverage
+.nyc_output
+
+# output folder (for testing pkpass files locally - keep folder, ignore files)
+/output/*.pkpass
+/output/*.pass
+!/output/
+
+# agent os
+.agentos/tasks/*.md
+!.agentos/tasks/README.md
+!.agentos/tasks/task-template.md
 
 !/certificate/*.pem
 !/certificate/*.key

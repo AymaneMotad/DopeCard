@@ -23,6 +23,43 @@ const serviceAccount = {
 
 //console.log('service account is', serviceAccount)
 
+/**
+ * Validates that a buffer contains valid image data by checking magic bytes
+ * PNG: 89 50 4E 47 0D 0A 1A 0A
+ * JPEG: FF D8 FF
+ */
+function validateImageBuffer(buffer: Buffer, assetName: string): void {
+    if (buffer.length < 8) {
+        throw new Error(`Asset ${assetName}: Buffer too small to be a valid image (${buffer.length} bytes)`);
+    }
+
+    // Check for PNG signature
+    const isPNG = buffer[0] === 0x89 && 
+                  buffer[1] === 0x50 && 
+                  buffer[2] === 0x4E && 
+                  buffer[3] === 0x47 &&
+                  buffer[4] === 0x0D && 
+                  buffer[5] === 0x0A && 
+                  buffer[6] === 0x1A && 
+                  buffer[7] === 0x0A;
+
+    // Check for JPEG signature
+    const isJPEG = buffer[0] === 0xFF && 
+                   buffer[1] === 0xD8 && 
+                   buffer[2] === 0xFF;
+
+    if (!isPNG && !isJPEG) {
+        const firstBytes = Array.from(buffer.slice(0, 8))
+            .map(b => `0x${b.toString(16).padStart(2, '0')}`)
+            .join(' ');
+        throw new Error(
+            `Asset ${assetName}: Invalid image format. Expected PNG or JPEG. ` +
+            `First 8 bytes: ${firstBytes}`
+        );
+    }
+
+    console.log(`Asset ${assetName}: Valid ${isPNG ? 'PNG' : 'JPEG'} image (${buffer.length} bytes)`);
+}
 
 export async function generatePass(userId: string, stampCount: number = 0) {
     console.log('Starting to initiate the pass creation');
@@ -73,12 +110,44 @@ export async function generatePass(userId: string, stampCount: number = 0) {
 
         console.log('Fetching assets...');
         
-        // Fetch all assets concurrently
+        // Fetch all assets concurrently with detailed error handling
+        const assetNames = Object.keys(assetUrls);
+        const assetUrlArray = Object.values(assetUrls);
+        
         const responses = await Promise.all(
-            Object.values(assetUrls).map(url => axios.get(url, { responseType: 'arraybuffer' }))
+            assetUrlArray.map(async (url, index) => {
+                const assetName = assetNames[index];
+                try {
+                    console.log(`Fetching asset: ${assetName} from ${url}`);
+                    const response = await axios.get(url, { 
+                        responseType: 'arraybuffer',
+                        validateStatus: (status) => status === 200 // Only accept 200 status
+                    });
+                    
+                    // Validate HTTP status
+                    if (response.status !== 200) {
+                        throw new Error(`HTTP ${response.status} for ${assetName}`);
+                    }
+                    
+                    // Validate Content-Type header
+                    const contentType = response.headers['content-type'] || '';
+                    if (!contentType.startsWith('image/')) {
+                        console.warn(`Warning: ${assetName} has non-image Content-Type: ${contentType}`);
+                    }
+                    
+                    console.log(`Asset ${assetName}: Status ${response.status}, Content-Type: ${contentType}, Size: ${response.data.byteLength} bytes`);
+                    
+                    return { assetName, data: response.data, status: response.status, contentType };
+                } catch (error: any) {
+                    const errorMsg = error.response 
+                        ? `HTTP ${error.response.status} ${error.response.statusText}`
+                        : error.message;
+                    throw new Error(`Failed to fetch asset ${assetName} from ${url}: ${errorMsg}`);
+                }
+            })
         );
 
-        // Create buffers for each asset
+        // Create buffers for each asset and validate them
         const [
             artworkBuffer,
             artwork2xBuffer,
@@ -89,10 +158,23 @@ export async function generatePass(userId: string, stampCount: number = 0) {
             logo2xBuffer,
             secondaryLogoBuffer,
             secondaryLogo2xBuffer
-        ] = responses.map(response => Buffer.from(response.data));
+        ] = responses.map((response, index) => {
+            const assetName = assetNames[index];
+            const buffer = Buffer.from(response.data);
+            
+            // Validate buffer is not empty
+            if (buffer.length === 0) {
+                throw new Error(`Asset ${assetName}: Buffer is empty`);
+            }
+            
+            // Validate image format
+            validateImageBuffer(buffer, assetName);
+            
+            return buffer;
+        });
 
-        // Log buffer sizes
-        console.log('Buffer sizes:', {
+        // Log buffer sizes summary
+        console.log('All assets fetched and validated successfully. Buffer sizes:', {
             artworkBuffer: artworkBuffer.length,
             artwork2xBuffer: artwork2xBuffer.length,
             artwork3xBuffer: artwork3xBuffer.length,
@@ -104,114 +186,84 @@ export async function generatePass(userId: string, stampCount: number = 0) {
             secondaryLogo2xBuffer: secondaryLogo2xBuffer.length
         });
 
-        // Verify that none of the buffers are empty
-        if (
-            artworkBuffer.length === 0 ||
-            artwork2xBuffer.length === 0 ||
-            artwork3xBuffer.length === 0 ||
-            iconBuffer.length === 0 ||
-            icon2xBuffer.length === 0 ||
-            logoBuffer.length === 0 ||
-            logo2xBuffer.length === 0 ||
-            secondaryLogoBuffer.length === 0 ||
-            secondaryLogo2xBuffer.length === 0
-        ) {
-            throw new Error('One or more asset buffers are empty');
-        }
-
-        console.log('Assets fetched successfully.');
-
-        // Create the pass JSON
-        const passJson = {
+        // Create minimal generic pass JSON matching old working version
+        // Using generic pass type (not storeCard) for maximum compatibility
+        // webServiceURL commented out for debugging - will add back later if needed
+        const passJson: any = {
             formatVersion: 1,
             serialNumber: `COFFEE${userId}`,
             passTypeIdentifier: 'pass.com.dopecard.passmaker',
             teamIdentifier: 'DTWNQT4JQL',
+            // webServiceURL commented out for debugging - Apple Wallet may reject HTTP URLs
+            // webServiceURL: `${baseUrl}/api/passes/v1`,
+            // authenticationToken: process.env.PASS_AUTH_TOKEN || 'default-token-change-in-production',
             description: 'Coffee Loyalty Card',
             organizationName: 'Brew Rewards',
             logoText: 'Brew Rewards',
-            foregroundColor: 'rgb(255, 255, 255)',
             backgroundColor: 'rgb(89, 52, 28)',
-            labelColor: 'rgb(255, 240, 220)',
-            storeCard: {
-                headerFields: [
-                    {
-                        key: 'balance',
-                        label: 'STAMPS',
-                        value: `${stampCount}/10`,
-                        textAlignment: 'PKTextAlignmentCenter'
-                    }
-                ],
+            foregroundColor: 'rgb(255, 255, 255)',
+            // Using generic pass type (matching old working version)
+            generic: {
                 primaryFields: [
                     {
-                        key: 'offer',
-                        label: 'REWARD STATUS',
-                        value: stampCount >= 10 ? 'FREE COFFEE!' : 'Keep collecting!',
-                        textAlignment: 'PKTextAlignmentCenter'
+                        key: 'stamps',
+                        label: 'Stamps Collected',
+                        value: stampCount
                     }
                 ],
                 secondaryFields: [
                     {
-                        key: 'progress',
-                        label: 'Progress',
-                        value: '☕'.repeat(stampCount) + '○'.repeat(10 - stampCount),
-                        textAlignment: 'PKTextAlignmentCenter'
-                    }
-                ],
-                auxiliaryFields: [
-                    {
-                        key: 'member',
-                        label: 'MEMBER SINCE',
-                        value: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-                        textAlignment: 'PKTextAlignmentLeft'
-                    },
-                    {
-                        key: 'status',
-                        label: 'STATUS',
-                        value: stampCount >= 20 ? 'Gold Member' : 'Regular',
-                        textAlignment: 'PKTextAlignmentRight'
-                    }
-                ],
-                backFields: [
-                    {
-                        key: 'terms',
-                        label: 'TERMS AND CONDITIONS',
-                        value: '1. Collect one stamp for each beverage purchase\n2. After 10 stamps, receive a free coffee of your choice\n3. Stamps expire after 6 months of inactivity\n4. Gold Member status unlocks exclusive seasonal drinks'
-                    },
-                    {
-                        key: 'locations',
-                        label: 'PARTICIPATING LOCATIONS',
-                        value: 'Visit our website for a complete list of locations where you can collect and redeem stamps.'
+                        key: 'reward',
+                        label: 'Reward Progress',
+                        value: `${stampCount}/10`
                     }
                 ]
             },
             barcode: {
-                message: `USER${userId}`,
+                message: userId, // Using userId directly (matching old working version)
                 format: 'PKBarcodeFormatQR',
                 messageEncoding: 'iso-8859-1'
-            },
-            suppressStripShine: false,
-            locations: [
-                {
-                    longitude: -122.3748889,
-                    latitude: 37.6189722,
-                    relevantText: "Nearby! Show this pass to collect your stamp."
-                }
-            ]
+            }
         };
 
-        // Create a new PKPass instance with all the assets and the updated pass.json
+        // Validate pass.json structure for generic pass type
+        console.log('Validating pass.json structure...');
+        if (!passJson.serialNumber || !passJson.passTypeIdentifier || !passJson.teamIdentifier) {
+            throw new Error('Pass JSON missing required fields: serialNumber, passTypeIdentifier, or teamIdentifier');
+        }
+        if (!passJson.generic) {
+            throw new Error('Pass JSON missing required generic structure');
+        }
+        if (!passJson.barcode || !passJson.barcode.message || !passJson.barcode.format) {
+            throw new Error('Pass JSON missing required barcode fields');
+        }
+        console.log('Pass.json structure validated successfully.');
+        console.log('Pass type: generic');
+        console.log('Pass serial number:', passJson.serialNumber);
+        console.log('Pass type identifier:', passJson.passTypeIdentifier);
+        console.log('Pass team identifier:', passJson.teamIdentifier);
+        console.log('Barcode message:', passJson.barcode.message);
+        console.log('Barcode format:', passJson.barcode.format);
+        
+        // Log full pass.json for debugging
+        const passJsonStr = JSON.stringify(passJson, null, 2);
+        console.log('Pass.json content:', passJsonStr);
+
+        // Create a new PKPass instance with minimal assets (matching old working version)
+        // Old version only used logo.png and icon.png - using same approach for compatibility
+        console.log('Creating PKPass instance...');
         const pass = new passkit.PKPass({
-            "icon.png": iconBuffer,
-            "icon@2x.png": icon2xBuffer,
+            "pass.json": Buffer.from(JSON.stringify(passJson)),
             "logo.png": logoBuffer,
-            "logo@2x.png": logo2xBuffer,
-            "strip.png": artworkBuffer,
-            "strip@2x.png": artwork2xBuffer,
-            "strip@3x.png": artwork3xBuffer,
-            "thumbnail.png": secondaryLogoBuffer,
-            "thumbnail@2x.png": secondaryLogo2xBuffer,
-            "pass.json": Buffer.from(JSON.stringify(passJson))
+            "icon.png": iconBuffer
+            // Commenting out extra assets for now - matching old minimal structure
+            // "icon@2x.png": icon2xBuffer,
+            // "logo@2x.png": logo2xBuffer,
+            // "strip.png": artworkBuffer,
+            // "strip@2x.png": artwork2xBuffer,
+            // "strip@3x.png": artwork3xBuffer,
+            // "thumbnail.png": secondaryLogoBuffer,
+            // "thumbnail@2x.png": secondaryLogo2xBuffer,
         }, {
             wwdr: wwdrBuffer,
             signerCert: p12Buffer,
@@ -221,11 +273,50 @@ export async function generatePass(userId: string, stampCount: number = 0) {
 
         console.log("PKPass instance created successfully.");
 
+        // Note: barcode is already defined in pass.json, so we don't need to call setBarcodes()
+        // The old working version called setBarcodes(), but this causes a validation error
+        // when barcode is already in pass.json. Removing setBarcodes() call to avoid conflict.
+        
+        // Localize content (matching old working version) - this is optional
+        console.log('Setting pass localization...');
+        try {
+            pass.localize("en", { 
+                description: 'Coffee Loyalty Card' 
+            });
+            console.log('Pass localized successfully.');
+        } catch (error: any) {
+            // Log warning but don't fail - localization is optional
+            console.warn('Warning: Error setting localization:', error.message);
+        }
+        
+        // Barcode is already defined in pass.json, so we don't call setBarcodes()
+        // Calling setBarcodes() when barcode already exists in pass.json causes:
+        // ValidationError: "value" must be of type object
+        // This validation error can corrupt the pass structure
+
         // Generate the .pkpass file
+        console.log('Generating pkpass buffer...');
         const buffer = await pass.getAsBuffer();
 
+        // Validate the generated buffer
+        if (!buffer || buffer.length === 0) {
+            throw new Error('Generated pkpass buffer is empty');
+        }
+
+        // Validate it's a valid ZIP file (pkpass is a ZIP archive)
+        if (buffer.length < 2 || buffer[0] !== 0x50 || buffer[1] !== 0x4B) {
+            const firstBytes = Array.from(buffer.slice(0, 4))
+                .map(b => `0x${b.toString(16).padStart(2, '0')}`)
+                .join(' ');
+            throw new Error(
+                `Generated pkpass buffer does not start with ZIP signature (PK). ` +
+                `First 4 bytes: ${firstBytes}. Expected: 0x50 0x4B`
+            );
+        }
+
         console.log('Pass generated successfully!');
-        console.log('Pass generation buffer size:', buffer.length);
+        console.log('Pass generation buffer size:', buffer.length, 'bytes');
+        console.log('Buffer starts with ZIP signature (PK):', buffer[0] === 0x50 && buffer[1] === 0x4B);
 
         return buffer;
 

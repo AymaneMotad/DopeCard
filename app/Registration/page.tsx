@@ -77,24 +77,61 @@ export default function LoginForm() {
       
       createUser.mutate({ ...values, platform }, {
           onSuccess(data) {
-              if (platform === 'ios') {
-                  // Convert base64 back to buffer
+              console.log('onSuccess called, platform:', platform);
+              console.log('Data received:', data);
+              console.log('passData:', data.passData);
+              
+              if (platform === 'ios' || platform === 'unknown') {
+                  console.log('Processing iOS download...');
+                  // Exact same code as test-card - no trimming, direct decode
                   const binaryData = atob(data.passData.buffer);
+                  console.log('Base64 decoded, length:', binaryData.length);
                   const bytes = new Uint8Array(binaryData.length);
                   for (let i = 0; i < binaryData.length; i++) {
                       bytes[i] = binaryData.charCodeAt(i);
                   }
                   
+                  // Validate buffer size
+                  if (bytes.length === 0) {
+                      throw new Error('Reconstructed buffer is empty');
+                  }
+                  
+                  // Exact same blob creation as test-card
                   const blob = new Blob([bytes], { type: data.passData.mimeType });
                   const url = window.URL.createObjectURL(blob);
                   
+                  // Simple, direct download approach - same as test-card
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = 'pass.pkpass';
+                  // Use serial number from pass data for filename
+                  const filename = data.pass?.serialNumber ? `${data.pass.serialNumber}.pkpass` : 'pass.pkpass';
+                  a.download = filename;
+                  a.style.display = 'none';
                   document.body.appendChild(a);
+                  
+                  // Try download first
+                  console.log('Clicking download link...');
                   a.click();
-                  document.body.removeChild(a);
-                  window.URL.revokeObjectURL(url);
+                  console.log('Download link clicked');
+                  
+                  // Fallback: if download doesn't work, open in new window after a short delay
+                  setTimeout(() => {
+                      console.log('Fallback: trying window.open...');
+                      // Check if download was blocked by trying to open the URL
+                      // This gives the browser a chance to download first
+                      const opened = window.open(url, '_blank');
+                      if (!opened) {
+                          console.log('window.open blocked, trying window.location...');
+                          // As last resort, try direct window.location
+                          window.location.href = url;
+                      }
+                  }, 500);
+                  
+                  // Clean up after a delay
+                  setTimeout(() => {
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                  }, 2000);
                   
                   setDownloadState("success");
               } else if (platform === 'android') {
@@ -103,6 +140,7 @@ export default function LoginForm() {
               }
           },
           onError(error) {
+              console.error('Mutation error:', error);
               form.setError("root", {
                   message: "Error creating user. Please try again.",
               });

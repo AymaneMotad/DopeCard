@@ -1,11 +1,11 @@
-// server/api/routers/users.ts
-import { publicProcedure, router, protectedProcedure } from "../trpc";
+// Admin router for managing users, clients, managers, etc.
+import { adminProcedure, router } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { users, client, commercialAgent, managers } from "@/db/schema";
 import { db } from "@/db/drizzle";
-import { auth, clerkClient } from '@clerk/nextjs/server'
-
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 // Base user schema
 const baseUserSchema = z.object({
@@ -55,40 +55,25 @@ const createUserSchema = z.discriminatedUnion("role", [
   }),
 ]);
 
-export const usersRouter = router({
-  create: protectedProcedure
+export const adminRouter = router({
+  // Create user (admin only)
+  createUser: adminProcedure
     .input(createUserSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Check if user is admin
-      const adminUser = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.clerkId, ctx.auth.userId)
-      });
-
-      if (!adminUser || adminUser.role !== 'admin') {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Only admins can create users',
-        });
-      }
-
+    .mutation(async ({ input }) => {
       try {
-        // Create user in Clerk
-        const clerkUser = await clerkClient.users.createUser({
-          emailAddress: [input.email],
-          password: input.password,
-          username: input.username,
-        });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(input.password, 10);
 
         // Start database transaction
         return await db.transaction(async (tx) => {
           // Create base user
           const [newUser] = await tx.insert(users)
             .values({
-              clerkId: clerkUser.id,
               role: input.role,
               email: input.email,
               username: input.username,
               phoneNumber: input.phoneNumber,
+              password: hashedPassword,
             })
             .returning();
 
@@ -117,7 +102,6 @@ export const usersRouter = router({
               await tx.insert(managers).values({
                 userId: newUser.id,
                 clientId: input.clientId,
-                permissions: input.permissions,
               });
               break;
           }
@@ -126,11 +110,6 @@ export const usersRouter = router({
         });
 
       } catch (error) {
-        // If there's an error, attempt to delete the Clerk user if it was created
-        if (error instanceof Error && 'clerkUser' in this) {
-          await clerkClient.users.deleteUser(this.clerkUser.id).catch(() => {});
-        }
-
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to create user',
@@ -139,46 +118,22 @@ export const usersRouter = router({
       }
     }),
 
-  // Get all users
-  getAll: protectedProcedure
-    .query(async ({ ctx }) => {
-      const adminUser = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.clerkId, ctx.auth.userId)
-      });
-
-      if (!adminUser || adminUser.role !== 'admin') {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Only admins can view all users',
-        });
-      }
-
+  // Get all users (admin only)
+  getAllUsers: adminProcedure
+    .query(async () => {
       return await db.query.users.findMany({
         with: {
-          client: true,
-          manager: true,
-          commercialAgent: true,
+          // Note: These relations need to be defined in schema if using drizzle relations
         },
       });
     }),
 
-  // Delete user
-  delete: protectedProcedure
-    .input(z.object({ userId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const adminUser = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.clerkId, ctx.auth.userId)
-      });
-
-      if (!adminUser || adminUser.role !== 'admin') {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Only admins can delete users',
-        });
-      }
-
+  // Delete user (admin only)
+  deleteUser: adminProcedure
+    .input(z.object({ userId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
       const userToDelete = await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, input.userId)
+        where: eq(users.id, input.userId),
       });
 
       if (!userToDelete) {
@@ -188,13 +143,22 @@ export const usersRouter = router({
         });
       }
 
-      // Delete from Clerk first
-      await clerkClient.users.deleteUser(userToDelete.clerkId);
-
-      // Then delete from your database
+      // Delete from database
       await db.delete(users)
         .where(eq(users.id, input.userId));
 
       return { success: true };
+    }),
+
+  // Get all clients
+  getAllClients: adminProcedure
+    .query(async () => {
+      return await db.query.client.findMany();
+    }),
+
+  // Get all managers
+  getAllManagers: adminProcedure
+    .query(async () => {
+      return await db.query.managers.findMany();
     }),
 });

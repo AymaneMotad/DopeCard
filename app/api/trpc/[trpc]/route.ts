@@ -3,6 +3,9 @@ import { appRouter } from "@/server";
 
 const handler = async (req: Request) => {
   console.log('Incoming trpc request', req.url);
+  
+  const userAgent = req.headers.get('user-agent') || '';
+  console.log('User-Agent header:', userAgent);
 
     // check if the request is for our mutation, and it's a POST request
     const isUsersCreate = req.url.includes("/api/trpc/users.create") && req.method === "POST";
@@ -11,7 +14,16 @@ const handler = async (req: Request) => {
     endpoint: "/api/trpc",
     req,
     router: appRouter,
-    createContext: () => ({}),
+    createContext: () => {
+      const ctx = {
+        req,
+        headers: {
+          'user-agent': userAgent,
+        },
+      };
+      console.log('Creating context with User-Agent:', ctx.headers['user-agent']);
+      return ctx;
+    },
   });
 
    if(isUsersCreate) {

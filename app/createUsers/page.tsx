@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { 
   Select, 
   SelectContent, 
@@ -14,69 +15,68 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { trpc } from "@/server/client";
 
 const CreateUserPage = () => {
-  const { getToken } = useAuth();
+  const { data: session, status } = useSession();
   const [selectedRole, setSelectedRole] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  
+  const createUser = trpc.admin.createUser.useMutation({
+    onSuccess: () => {
+      // Reset form and show success
+      setError("");
+      setSelectedRole("");
+      alert("User created successfully!");
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
-  const handleSubmit = async (e) => {
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+
+  if (status === "unauthenticated" || session?.user?.role !== "admin") {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>You must be an admin to access this page.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    try {
-      const formData = new FormData(e.target);
-      const token = await getToken();
+    const formData = new FormData(e.currentTarget);
+    
+    const userData: any = {
+      role: selectedRole,
+      email: formData.get('email') as string,
+      username: formData.get('username') as string,
+      phoneNumber: formData.get('phoneNumber') as string || undefined,
+      password: formData.get('password') as string,
+    };
 
-      const response = await fetch('/api/users/create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          role: selectedRole,
-          email: formData.get('email'),
-          username: formData.get('username'),
-          phoneNumber: formData.get('phoneNumber'),
-          password: formData.get('password'),
-          // Role-specific fields
-          ...(selectedRole === 'client' && {
-            businessName: formData.get('businessName'),
-            businessType: formData.get('businessType'),
-            subscriptionPack: formData.get('subscriptionPack')
-          }),
-          ...(selectedRole === 'commercial' && {
-            assignedTerritory: formData.get('territory'),
-            targetQuota: formData.get('quota'),
-            commissionRate: formData.get('commission')
-          }),
-          ...(selectedRole === 'manager' && {
-            clientId: formData.get('clientId'),
-            permissions: {
-              canEditPasses: formData.get('canEditPasses') === 'on',
-              canDeletePasses: formData.get('canDeletePasses') === 'on',
-              canViewAnalytics: formData.get('canViewAnalytics') === 'on'
-            }
-          })
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      // Reset form and show success message
-      e.target.reset();
-      setSelectedRole("");
-      // You might want to add a success toast here
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    // Add role-specific fields
+    if (selectedRole === 'client') {
+      userData.businessName = formData.get('businessName') as string;
+      userData.businessType = formData.get('businessType') as string;
+      userData.subscriptionPack = formData.get('subscriptionPack') as string;
+    } else if (selectedRole === 'commercial') {
+      userData.assignedTerritory = formData.get('territory') as string;
+      userData.targetQuota = Number(formData.get('quota'));
+      userData.commissionRate = Number(formData.get('commission'));
+    } else if (selectedRole === 'manager') {
+      userData.clientId = formData.get('clientId') as string;
     }
+
+    createUser.mutate(userData);
   };
 
   return (
@@ -222,38 +222,6 @@ const CreateUserPage = () => {
                     required 
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Permissions</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Input 
-                        id="canEditPasses" 
-                        name="canEditPasses" 
-                        type="checkbox" 
-                        className="w-4 h-4" 
-                      />
-                      <Label htmlFor="canEditPasses">Can Edit Passes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input 
-                        id="canDeletePasses" 
-                        name="canDeletePasses" 
-                        type="checkbox" 
-                        className="w-4 h-4" 
-                      />
-                      <Label htmlFor="canDeletePasses">Can Delete Passes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input 
-                        id="canViewAnalytics" 
-                        name="canViewAnalytics" 
-                        type="checkbox" 
-                        className="w-4 h-4" 
-                      />
-                      <Label htmlFor="canViewAnalytics">Can View Analytics</Label>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -264,8 +232,8 @@ const CreateUserPage = () => {
               </Alert>
             )}
 
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create User"}
+            <Button type="submit" disabled={createUser.isLoading}>
+              {createUser.isLoading ? "Creating..." : "Create User"}
             </Button>
           </form>
         </CardContent>

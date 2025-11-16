@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "project": "dope-card",
+  "description": "Digital Loyalty Card Platform - Spec-Driven Development Configuration",
+  "layers": {
+    "standards": "./standards",
+    "product": "./product",
+    "specs": "./specs",
+    "ui-elements": "./ui-elements"
+  },
+  "taskTracking": {
+    "enabled": true,
+    "format": "markdown",
+    "location": "./tasks"
+  },
+  "context": {
+    "maintainHistory": true,
+    "maxHistoryEntries": 50
+  }
+}
+
