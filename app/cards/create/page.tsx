@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/server/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { getCardTemplate } from "@/modules/pass-generation/card-templates";
 
 type CardType = 'stamp' | 'points' | 'discount';
 
-export default function CreateCardPage() {
+function CreateCardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateId = searchParams.get('template');
@@ -655,6 +655,28 @@ export default function CreateCardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function CreateCardPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-6 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New Card</CardTitle>
+            <CardDescription>
+              <Skeleton className="h-4 w-32" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <CreateCardPageContent />
+    </Suspense>
   );
 }
 

@@ -14,7 +14,7 @@ export function FloatingCard({
   children, 
   delay = 0, 
   className = "",
-  intensity = 20 
+  intensity = 15 
 }: FloatingCardProps) {
   return (
     <motion.div
@@ -23,12 +23,14 @@ export function FloatingCard({
         y: [0, -intensity, 0],
       }}
       transition={{
-        duration: 3 + delay,
+        duration: 4 + delay * 0.5,
         repeat: Infinity,
         ease: "easeInOut",
-        delay: delay
+        delay: delay,
+        repeatType: "reverse"
       }}
       className={className}
+      style={{ willChange: 'transform' }}
     >
       {children}
     </motion.div>

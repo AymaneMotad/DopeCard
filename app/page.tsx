@@ -475,10 +475,11 @@ function FinalCTASection() {
 
 // Main Landing Page Component
 export default function LandingPage() {
+  // Optimized: Reduced parallax effect for better performance
   const { scrollYProgress } = useScroll();
   const heroRef = useRef(null);
-  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, -150]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, -50]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 font-[family-name:var(--font-geist-sans)] overflow-x-hidden">
@@ -486,10 +487,13 @@ export default function LandingPage() {
       <ParticleBackground />
       
       <main className="relative z-10">
-        {/* Hero Section with Parallax */}
+        {/* Hero Section with Optimized Parallax */}
         <motion.section
           ref={heroRef}
-          style={{ y: heroY, opacity: heroOpacity }}
+          style={{ 
+            y: heroY, 
+            opacity: heroOpacity,
+          }}
           className="relative min-h-screen"
         >
           <HeroSection />

@@ -18,8 +18,9 @@ export function HeroSection() {
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 backdrop-blur-md border border-blue-200/50 dark:border-blue-800/50 mb-8 shadow-lg"
         >
           <motion.div
-            animate={{ rotate: [0, 360] }}
+            animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            style={{ willChange: 'transform' }}
           >
             <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </motion.div>
@@ -35,36 +36,15 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-5xl sm:text-6xl lg:text-8xl xl:text-9xl font-extrabold mb-8 leading-[1.1] tracking-tight"
         >
-          <motion.span
-            className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient"
-            animate={{
-              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-          >
+          <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient">
             Révolutionnez
-          </motion.span>
+          </span>
           <span className="block text-gray-900 dark:text-white mt-2">
             Votre Fidélisation
           </span>
-          <motion.span
-            className="block bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mt-2"
-            animate={{
-              backgroundPosition: ["100% 50%", "0% 50%", "100% 50%"],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "linear",
-              delay: 2.5
-            }}
-          >
+          <span className="block bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mt-2">
             Client
-          </motion.span>
+          </span>
         </motion.h1>
 
         <motion.p
