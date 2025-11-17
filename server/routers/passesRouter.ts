@@ -189,13 +189,37 @@ export const passesRouter = router({
         const userId = userResult[0].id;
         const serialNumber = `COFFEE${userId}`;
 
-        // Prepare card data based on card type
+        // Default assets from templates (using the URLs already in the project)
+        const DEFAULT_ASSETS = {
+          icon: 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
+          icon2x: 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
+          logo: 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+          logo2x: 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
+          strip: 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
+          strip2x: 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
+          strip3x: 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
+          thumbnail: 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+          thumbnail2x: 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71',
+        };
+
+        // Prepare card data based on card type - MUST include all design fields to match preview
         const cardData = {
+          // Visual design fields - these MUST match the preview
           cardTitle: input.cardTitle,
           businessName: input.businessName,
+          subtitle: input.subtitle,
           description: input.description,
+          backgroundColor: input.backgroundColor,
+          textColor: input.textColor,
+          accentColor: input.accentColor,
+          // Asset URLs - use default assets like the preview
+          logo: DEFAULT_ASSETS.logo,
+          icon: DEFAULT_ASSETS.icon,
+          strip: DEFAULT_ASSETS.strip,
+          // Card type specific fields
           stampCount: input.initialStamps || 0,
           stampThreshold: input.stampCount || 10,
+          rewardsCollected: 0,
           pointsBalance: input.pointsBalance || input.initialStamps || 0,
           pointsRate: input.pointsRate || 1,
           discountPercentage: input.discountPercentage || 0,

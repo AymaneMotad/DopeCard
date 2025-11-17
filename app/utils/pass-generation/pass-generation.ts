@@ -194,11 +194,29 @@ export async function generatePass(
         });
 
         // Prepare card data with defaults for backward compatibility
+        // Use cardData values if provided, otherwise use defaults
+        // stampCount from function parameter is the current stamps (can be overridden by cardData.stampCount)
+        // stampThreshold from cardData is the total stamps needed for reward
+        // IMPORTANT: Always prioritize cardData.stampCount if cardData is provided, even if it's 0
+        // This ensures the pass matches what was configured in the card settings
         const cardDataWithDefaults: CardData = {
-            stampCount,
-            stampThreshold: 10,
-            ...cardData
+            ...cardData, // Spread cardData first to get all fields
+            // If cardData is provided and has stampCount property (even if undefined), use cardData.stampCount ?? 0
+            // Otherwise, fall back to function parameter stampCount
+            stampCount: cardData ? (cardData.stampCount ?? 0) : stampCount,
+            stampThreshold: cardData?.stampThreshold ?? 10, // Total stamps needed (from cardData or default to 10)
         };
+        
+        // Log for debugging - this will help identify where the wrong stamp count is coming from
+        console.log('Pass generation - stampCount values:', {
+            functionParameter: stampCount,
+            cardDataExists: !!cardData,
+            cardDataStampCount: cardData?.stampCount,
+            cardDataStampThreshold: cardData?.stampThreshold,
+            finalStampCount: cardDataWithDefaults.stampCount,
+            finalStampThreshold: cardDataWithDefaults.stampThreshold,
+            cardType,
+        });
 
         // Generate storeCard field structure based on card type
         const storeCardFields = mapCardTypeToStoreCardFields(cardType, cardDataWithDefaults);

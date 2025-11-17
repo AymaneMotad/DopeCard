@@ -881,6 +881,60 @@ export default function TestCardPage() {
               </ul>
             </div>
 
+            {/* Test Pass Download Button */}
+            <div className="p-6 border rounded-lg bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+              <h3 className="font-semibold text-lg mb-4">Test Pass Preview</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Download a test pass to see exactly how it will look in Apple Wallet or Google Wallet before creating the card.
+              </p>
+              <Button
+                onClick={() => {
+                  generateTestPass.mutate({
+                    cardType: formData.cardType,
+                    stampCount: formData.stampCount,
+                    initialStamps: formData.initialStamps,
+                    pointsRate: formData.pointsRate,
+                    pointsBalance: formData.pointsBalance,
+                    discountTiers: formData.discountTiers,
+                    discountPercentage: formData.discountPercentage,
+                    cashbackPercentage: formData.cashbackPercentage,
+                    cashbackEarned: formData.cashbackEarned,
+                    balance: formData.balance,
+                    visits: formData.visits,
+                    classesPerMonth: formData.classesPerMonth,
+                    expirationDate: formData.expirationDate,
+                    offerDescription: formData.offerDescription,
+                    backgroundColor: formData.backgroundColor,
+                    textColor: formData.textColor,
+                    accentColor: formData.accentColor,
+                    cardTitle: formData.cardTitle,
+                    businessName: formData.businessName,
+                    subtitle: formData.subtitle,
+                    description: formData.description,
+                    expiration: formData.expiration,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate,
+                    platform: platform as 'ios' | 'android' | 'unknown',
+                  });
+                }}
+                disabled={generateTestPass.isLoading || !formData.cardTitle || !formData.businessName}
+                variant="outline"
+                className="w-full"
+              >
+                {generateTestPass.isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generating Test Pass...</span>
+                  </div>
+                ) : (
+                  "Download Test Pass"
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-3">
+                This will generate and download an actual {platform === 'ios' ? 'Apple Wallet' : platform === 'android' ? 'Google Wallet' : 'wallet'} pass with the current settings for testing purposes.
+              </p>
+            </div>
+
             {/* PDF Preview */}
             <div className="mt-8">
               <h3 className="font-semibold text-lg mb-6">PDF Preview</h3>
@@ -1087,103 +1141,143 @@ export default function TestCardPage() {
               />
             </div>
 
-            {/* Header Fields */}
-            <div className="px-4 pt-2 pb-4">
-              <div className="text-center mb-2">
-                <h2 className="text-lg font-semibold" style={{ color: formData.textColor }}>
+            {/* Clean Card Layout matching high-fidelity designs */}
+            <div className="px-4 pt-4 pb-3">
+              {/* Card Title & Business Name */}
+              <div className="mb-4">
+                <h2 className="text-base font-semibold" style={{ color: formData.textColor }}>
                   {formData.cardTitle}
                 </h2>
-                <p className="text-xs opacity-90" style={{ color: formData.textColor }}>
+                <p className="text-xs opacity-80" style={{ color: formData.textColor }}>
                   {formData.businessName}
                 </p>
               </div>
-            </div>
 
-            {/* Primary Field */}
-            <div className="px-4 pb-3 border-t border-white/20">
-              <div className="text-center py-2">
-                {formData.cardType === "stamp" && (
+              {/* Header Fields (Two columns like actual pass) */}
+              <div className="pb-3 border-t border-white/10 pt-3">
+                <div className="flex justify-between items-start">
+                  {/* Left header field */}
                   <div>
-                    <div className="text-2xl font-bold" style={{ color: formData.textColor }}>
-                      {formData.initialStamps}/{formData.stampCount}
+                    <p className="text-xs opacity-70" style={{ color: formData.textColor }}>
+                      {formData.cardType === "stamp" && "stamps"}
+                      {formData.cardType === "points" && "Points balance"}
+                      {formData.cardType === "discount" && "Discount percentage"}
+                      {formData.cardType === "cashback" && "Cashback percentage"}
+                      {formData.cardType === "multipass" && "Visits left"}
+                      {formData.cardType === "membership" && "Classes per month"}
+                      {formData.cardType === "coupon" && "Valid until"}
+                      {formData.cardType === "reward" && "Points balance"}
+                      {formData.cardType === "gift" && "Gift card balance"}
+                    </p>
+                    <p className="text-lg font-semibold mt-1" style={{ color: formData.textColor }}>
+                      {formData.cardType === "stamp" && formData.initialStamps}
+                      {formData.cardType === "points" && (formData.pointsBalance || 0)}
+                      {formData.cardType === "discount" && `${formData.discountPercentage}%`}
+                      {formData.cardType === "cashback" && `${formData.cashbackPercentage}%`}
+                      {formData.cardType === "multipass" && formData.initialStamps}
+                      {formData.cardType === "membership" && formData.classesPerMonth}
+                      {formData.cardType === "coupon" && (formData.expirationDate || "N/A")}
+                      {formData.cardType === "reward" && (formData.pointsBalance || 0)}
+                      {formData.cardType === "gift" && `£${formData.balance || 0}`}
+                    </p>
+                  </div>
+                  {/* Right header field (for stamp cards) */}
+                  {formData.cardType === "stamp" && (
+                    <div className="text-right">
+                      <p className="text-xs opacity-70" style={{ color: formData.textColor }}>
+                        rewards
+                      </p>
+                      <p className="text-lg font-semibold mt-1" style={{ color: formData.textColor }}>
+                        0
+                      </p>
                     </div>
-                    <div className="text-xs mt-1 opacity-90" style={{ color: formData.textColor }}>
-                      STAMPS
-                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Primary Field (Large, centered) - Visual Display */}
+              <div className="py-4 border-t border-white/10">
+                {(formData.cardType === "stamp" || formData.cardType === "multipass") && (
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {[...Array(Math.min(formData.stampCount, 10))].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          i < formData.initialStamps
+                            ? 'bg-white/90'
+                            : 'bg-white/20'
+                        }`}
+                        style={{ 
+                          backgroundColor: i < formData.initialStamps ? formData.accentColor : undefined 
+                        }}
+                      >
+                        <div className="text-xs">●</div>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {formData.cardType === "points" && (
-                  <div>
-                    <div className="text-2xl font-bold" style={{ color: formData.accentColor }}>
-                      {formData.initialStamps * (formData.pointsRate || 1)} PTS
-                    </div>
-                    <div className="text-xs mt-1 opacity-90" style={{ color: formData.textColor }}>
-                      POINTS BALANCE
-                    </div>
-                  </div>
+                  <p className="text-center text-base" style={{ color: formData.textColor }}>
+                    Earn {formData.pointsRate} pts per £1
+                  </p>
                 )}
                 {formData.cardType === "discount" && (
-                  <div>
-                    <div className="text-2xl font-bold" style={{ color: formData.accentColor }}>
-                      {formData.discountTiers[0] || 5}% OFF
-                    </div>
-                    <div className="text-xs mt-1 opacity-90" style={{ color: formData.textColor }}>
-                      NEXT DISCOUNT
-                    </div>
-                  </div>
+                  <p className="text-center text-lg font-semibold" style={{ color: formData.textColor }}>
+                    {formData.subtitle || "Bronze"}
+                  </p>
+                )}
+                {formData.cardType === "cashback" && (
+                  <p className="text-center text-base" style={{ color: formData.textColor }}>
+                    £{formData.cashbackEarned?.toFixed(2) || "0.00"} earned
+                  </p>
+                )}
+                {formData.cardType === "membership" && (
+                  <p className="text-center text-lg font-semibold" style={{ color: formData.textColor }}>
+                    {formData.subtitle || "Gold"}
+                  </p>
+                )}
+                {formData.cardType === "coupon" && (
+                  <p className="text-center text-base" style={{ color: formData.textColor }}>
+                    {formData.offerDescription || "Special Offer"}
+                  </p>
+                )}
+                {formData.cardType === "reward" && (
+                  <p className="text-center text-base" style={{ color: formData.textColor }}>
+                    £1 = {formData.pointsRate} pts
+                  </p>
+                )}
+                {formData.cardType === "gift" && (
+                  <p className="text-center text-lg font-semibold" style={{ color: formData.textColor }}>
+                    Gift Card
+                  </p>
                 )}
               </div>
-            </div>
 
-            {/* Secondary Fields */}
-            <div className="px-4 pb-3 border-t border-white/20">
-              <div className="flex justify-between text-xs py-2">
-                <div>
-                  <div className="opacity-70" style={{ color: formData.textColor }}>MEMBER SINCE</div>
-                  <div className="font-semibold mt-1" style={{ color: formData.textColor }}>
-                    {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="opacity-70" style={{ color: formData.textColor }}>STATUS</div>
-                  <div className="font-semibold mt-1" style={{ color: formData.accentColor }}>
-                    {formData.subtitle || 'ACTIVE'}
+              {/* Secondary Field (Minimal info) */}
+              <div className="pt-3 pb-2 border-t border-white/10">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <p className="opacity-70" style={{ color: formData.textColor }}>
+                      {formData.subtitle || "Member"}
+                    </p>
+                    <p className="font-semibold mt-1" style={{ color: formData.textColor }}>
+                      {formData.cardType === "stamp" && `${Math.max(0, formData.stampCount - formData.initialStamps)} more`}
+                      {formData.cardType === "points" && `${100 - (formData.pointsBalance || 0)} more`}
+                      {formData.cardType === "multipass" && `${formData.initialStamps} of ${formData.stampCount}`}
+                      {formData.cardType === "membership" && `Valid until ${formData.expirationDate || "N/A"}`}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Stamps Display (for stamp cards) */}
-            {formData.cardType === "stamp" && (
-              <div className="px-4 pb-4 border-t border-white/20">
-                <div className="flex justify-center gap-2 mt-3 flex-wrap">
-                  {[...Array(formData.stampCount)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        i < formData.initialStamps
-                          ? 'bg-white text-black'
-                          : 'border-2 border-white/40'
-                      }`}
-                    >
-                      {i < formData.initialStamps ? (
-                        <Star className="w-4 h-4 fill-current" />
-                      ) : (
-                        <div className="w-2 h-2 rounded-full bg-white/40" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Barcode Section */}
-            <div className="bg-white px-4 py-4 border-t-2 border-dashed border-white/30">
+            {/* Barcode Section - Smaller, cleaner */}
+            <div className="bg-white px-4 py-3">
               <div className="flex flex-col items-center">
-                <div className="bg-white p-2 rounded">
-                  <QRCodeSVG value="TEST" size={80} />
+                <div className="bg-white rounded">
+                  <QRCodeSVG value="TEST" size={100} />
                 </div>
-                <p className="text-xs text-gray-600 mt-2">Scan to redeem</p>
+                <p className="text-xs text-gray-600 mt-2">Scan at checkout</p>
               </div>
             </div>
           </div>

@@ -93,56 +93,70 @@ export interface StoreCardFields {
 
 /**
  * Generate storeCard field structure for Stamp Card
+ * Designed to match high-fidelity templates with clean, minimal layout
  */
 export function mapStampCardFields(data: CardData): StoreCardFields {
-  const stampCount = data.stampCount || 0;
-  const threshold = data.stampThreshold || 10;
-  const rewardsCollected = data.rewardsCollected || 0;
+  // Use ?? instead of || to properly handle 0 values
+  const stampCount = data.stampCount ?? 0;
+  const threshold = data.stampThreshold ?? 10;
+  const rewardsCollected = data.rewardsCollected ?? 0;
   
   return {
+    // Header: Two separate fields for stamps and rewards
     headerFields: [
       {
         key: 'stamps',
-        label: 'STAMPS',
-        value: `${stampCount}/${threshold}`,
-        textAlignment: 'PKTextAlignmentCenter'
-      }
-    ],
-    primaryFields: [
-      {
-        key: 'reward',
-        label: 'REWARD STATUS',
-        value: stampCount >= threshold ? 'FREE REWARD!' : 'Keep collecting!',
-        textAlignment: 'PKTextAlignmentCenter'
-      }
-    ],
-    secondaryFields: [
-      {
-        key: 'progress',
-        label: 'STAMPS UNTIL REWARD',
-        value: `${Math.max(0, threshold - stampCount)} stamps`,
-        textAlignment: 'PKTextAlignmentCenter'
-      }
-    ],
-    auxiliaryFields: [
-      {
-        key: 'collected',
-        label: 'REWARDS COLLECTED',
-        value: `${rewardsCollected} rewards`,
+        label: 'stamps',
+        value: stampCount.toString(),
         textAlignment: 'PKTextAlignmentLeft'
       },
       {
-        key: 'status',
-        label: 'STATUS',
-        value: 'Active',
+        key: 'rewards',
+        label: 'rewards',
+        value: rewardsCollected.toString(),
         textAlignment: 'PKTextAlignmentRight'
       }
     ],
+    // Primary: Large visual stamp display (matches CITY HAIR design)
+    primaryFields: [
+      {
+        key: 'visualStamps',
+        label: '', // No label - cleaner look
+        // Display visual stamps using Unicode symbols
+        value: (() => {
+          const maxDisplay = Math.min(threshold, 10); // Limit to 10 for cleaner display
+          const displayCount = Math.min(stampCount, maxDisplay);
+          // Use ● for filled and ○ for empty (cleaner circles like in inspiration)
+          const filled = Array(displayCount).fill('●').join(' ');
+          const empty = Array(Math.max(0, maxDisplay - displayCount)).fill('○').join(' ');
+          const visualStamps = [filled, empty].filter(Boolean).join(' ');
+          return visualStamps || Array(maxDisplay).fill('○').join(' ');
+        })(),
+        textAlignment: 'PKTextAlignmentCenter'
+      }
+    ],
+    // Secondary: Minimal, focused info
+    secondaryFields: [
+      {
+        key: 'status',
+        label: data.subtitle || 'Member',
+        value: stampCount >= threshold ? 'Reward ready!' : `${Math.max(0, threshold - stampCount)} more`,
+        textAlignment: 'PKTextAlignmentLeft'
+      }
+    ],
+    // Auxiliary: Clean, two-column layout
+    auxiliaryFields: [],
+    // Back: Keep terms
     backFields: [
       {
         key: 'terms',
         label: 'TERMS AND CONDITIONS',
         value: data.description || 'Collect stamps to earn rewards. Terms apply.'
+      },
+      {
+        key: 'how',
+        label: 'HOW IT WORKS',
+        value: `Collect ${threshold} stamps to earn a reward. Show this card when making a purchase to collect stamps.`
       }
     ]
   };
@@ -150,59 +164,40 @@ export function mapStampCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Points Card
+ * Clean design matching inspiration templates
  */
 export function mapPointsCardFields(data: CardData): StoreCardFields {
   const pointsBalance = data.pointsBalance || 0;
   const pointsRate = data.pointsRate || 1;
   const nextThreshold = data.nextRewardThreshold || 100;
-  const lifetimePoints = data.lifetimePoints || pointsBalance;
-  const tier = data.tier || 'Bronze';
+  const tier = data.tier || data.subtitle || 'Bronze';
   
   return {
     headerFields: [
       {
-        key: 'points',
-        label: 'POINTS',
-        value: pointsBalance,
-        textAlignment: 'PKTextAlignmentCenter'
+        key: 'balance',
+        label: 'Points balance',
+        value: pointsBalance.toString(),
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
         key: 'earn',
-        label: 'Earn rewards',
-        value: `£1 = ${pointsRate} points`,
+        label: '',
+        value: `Earn ${pointsRate} pts per £1`,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
     secondaryFields: [
       {
-        key: 'next',
-        label: 'NEXT REWARD',
-        value: `After ${nextThreshold} points`,
-        textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'current',
-        label: 'CURRENT REWARD',
-        value: pointsBalance >= nextThreshold ? 'Available!' : 'Keep earning',
-        textAlignment: 'PKTextAlignmentRight'
-      }
-    ],
-    auxiliaryFields: [
-      {
         key: 'tier',
-        label: 'TIER',
-        value: tier,
+        label: tier,
+        value: pointsBalance >= nextThreshold ? 'Reward ready' : `${nextThreshold - pointsBalance} more`,
         textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'lifetime',
-        label: 'LIFETIME POINTS',
-        value: lifetimePoints,
-        textAlignment: 'PKTextAlignmentRight'
       }
     ],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -215,43 +210,31 @@ export function mapPointsCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Discount Card
+ * Clean design matching inspiration templates (like TESCO Clubcard)
  */
 export function mapDiscountCardFields(data: CardData): StoreCardFields {
   const discountPercentage = data.discountPercentage || 0;
-  const discountTier = data.discountTier || 'Bronze';
-  const visits = data.visits || 0;
+  const discountTier = data.discountTier || data.subtitle || 'Bronze';
   
   return {
     headerFields: [
       {
         key: 'discount',
-        label: 'DISCOUNT',
+        label: 'Discount percentage',
         value: `${discountPercentage}%`,
-        textAlignment: 'PKTextAlignmentCenter'
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
         key: 'status',
-        label: 'DISCOUNT STATUS',
+        label: '',
         value: discountTier,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
-    auxiliaryFields: [
-      {
-        key: 'visits',
-        label: 'VISITS',
-        value: visits,
-        textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'tier',
-        label: 'TIER',
-        value: discountTier,
-        textAlignment: 'PKTextAlignmentRight'
-      }
-    ],
+    secondaryFields: [],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -264,46 +247,39 @@ export function mapDiscountCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Cashback Card
+ * Clean design matching inspiration templates (like BREAD AHEAD)
  */
 export function mapCashbackCardFields(data: CardData): StoreCardFields {
-  const pointsBalance = data.pointsBalance || 0;
   const cashbackPercentage = data.cashbackPercentage || 0;
   const cashbackEarned = data.cashbackEarned || 0;
-  const cashbackStatus = data.cashbackStatus || 'Bronze';
+  const cashbackStatus = data.cashbackStatus || data.subtitle || 'Bronze';
   
   return {
     headerFields: [
       {
-        key: 'points',
-        label: 'POINTS',
-        value: pointsBalance.toFixed(2),
-        textAlignment: 'PKTextAlignmentCenter'
+        key: 'percentage',
+        label: 'Cashback percentage',
+        value: `${cashbackPercentage}%`,
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
-        key: 'cashback',
-        label: 'CASHBACK PERCENTAGE',
-        value: `${cashbackPercentage}%`,
+        key: 'earned',
+        label: '',
+        value: `£${cashbackEarned.toFixed(2)} earned`,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
     secondaryFields: [
       {
-        key: 'earned',
-        label: 'CASHBACK EARNED',
-        value: `£${cashbackEarned.toFixed(2)}`,
-        textAlignment: 'PKTextAlignmentCenter'
-      }
-    ],
-    auxiliaryFields: [
-      {
         key: 'status',
-        label: 'CASHBACK STATUS',
-        value: cashbackStatus,
-        textAlignment: 'PKTextAlignmentCenter'
+        label: cashbackStatus,
+        value: `${cashbackPercentage}% cashback`,
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -316,51 +292,39 @@ export function mapCashbackCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Membership Card
+ * Clean design matching inspiration templates (like YOGA BLISS & SIERRA)
  */
 export function mapMembershipCardFields(data: CardData): StoreCardFields {
   const expirationDate = data.expirationDate || 'N/A';
   const classesPerMonth = data.classesPerMonth || 0;
-  const membershipType = data.membershipType || 'Standard';
-  const availableLimits = data.availableLimits || 0;
-  const tier = data.tier || 'Gold';
+  const tier = data.tier || data.subtitle || 'Gold';
   
   return {
     headerFields: [
       {
-        key: 'valid',
-        label: 'VALID UNTIL',
-        value: expirationDate,
-        textAlignment: 'PKTextAlignmentCenter'
+        key: 'classes',
+        label: 'Classes per month',
+        value: classesPerMonth.toString(),
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
-        key: 'classes',
-        label: 'CLASSES PER MONTH',
-        value: classesPerMonth,
-        textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'type',
-        label: 'TYPE',
-        value: membershipType,
-        textAlignment: 'PKTextAlignmentRight'
-      }
-    ],
-    auxiliaryFields: [
-      {
         key: 'tier',
-        label: 'MEMBERSHIP TIER',
+        label: '',
         value: tier,
-        textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'limits',
-        label: 'AVAILABLE LIMITS',
-        value: availableLimits,
-        textAlignment: 'PKTextAlignmentRight'
+        textAlignment: 'PKTextAlignmentCenter'
       }
     ],
+    secondaryFields: [
+      {
+        key: 'valid',
+        label: 'Valid until',
+        value: expirationDate,
+        textAlignment: 'PKTextAlignmentLeft'
+      }
+    ],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -373,6 +337,7 @@ export function mapMembershipCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Coupon Card
+ * Clean design matching inspiration templates (like STRETCH INC.)
  */
 export function mapCouponCardFields(data: CardData): StoreCardFields {
   const expirationDate = data.expirationDate || 'N/A';
@@ -382,19 +347,21 @@ export function mapCouponCardFields(data: CardData): StoreCardFields {
     headerFields: [
       {
         key: 'valid',
-        label: 'VALID UNTIL',
+        label: 'Valid until',
         value: expirationDate,
-        textAlignment: 'PKTextAlignmentCenter'
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
         key: 'offer',
-        label: 'OFFER',
+        label: '',
         value: offerDescription,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
+    secondaryFields: [],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -407,44 +374,40 @@ export function mapCouponCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Reward Card
+ * Clean design matching inspiration templates
  */
 export function mapRewardCardFields(data: CardData): StoreCardFields {
   const pointsBalance = data.pointsBalance || 0;
   const pointsRate = data.pointsRate || 1;
-  const currentReward = data.currentReward || 'None';
   const nextThreshold = data.nextRewardThreshold || 100;
+  const tier = data.tier || data.subtitle || 'Member';
   
   return {
     headerFields: [
       {
-        key: 'points',
-        label: 'POINTS',
-        value: pointsBalance,
-        textAlignment: 'PKTextAlignmentCenter'
+        key: 'balance',
+        label: 'Points balance',
+        value: pointsBalance.toString(),
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
-        key: 'earn',
-        label: 'Earn rewards',
-        value: `£1 = ${pointsRate} points`,
+        key: 'rate',
+        label: '',
+        value: `£1 = ${pointsRate} pts`,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
     secondaryFields: [
       {
-        key: 'current',
-        label: 'CURRENT REWARD',
-        value: currentReward,
+        key: 'tier',
+        label: tier,
+        value: pointsBalance >= nextThreshold ? 'Reward ready' : `${nextThreshold - pointsBalance} more`,
         textAlignment: 'PKTextAlignmentLeft'
-      },
-      {
-        key: 'next',
-        label: 'NEXT REWARD',
-        value: `After ${nextThreshold} points`,
-        textAlignment: 'PKTextAlignmentRight'
       }
     ],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -457,37 +420,31 @@ export function mapRewardCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Gift Card
+ * Clean design matching inspiration templates
  */
 export function mapGiftCardFields(data: CardData): StoreCardFields {
   const balance = data.balance || 0;
   const cardNumber = data.cardNumber || 'N/A';
-  const tagline = data.tagline || '';
   
   return {
     headerFields: [
       {
         key: 'balance',
-        label: 'BALANCE',
-        value: `£${balance}`,
-        textAlignment: 'PKTextAlignmentCenter'
+        label: 'Gift card balance',
+        value: `£${balance.toFixed(2)}`,
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
-        key: 'tagline',
+        key: 'card',
         label: '',
-        value: tagline,
-        textAlignment: 'PKTextAlignmentCenter'
-      }
-    ],
-    secondaryFields: [
-      {
-        key: 'number',
-        label: 'GIFT CARD #',
         value: cardNumber,
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
+    secondaryFields: [],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',
@@ -500,36 +457,47 @@ export function mapGiftCardFields(data: CardData): StoreCardFields {
 
 /**
  * Generate storeCard field structure for Multipass Card
+ * Clean design matching inspiration templates
  */
 export function mapMultipassCardFields(data: CardData): StoreCardFields {
   const visitsLeft = data.stampCount || 0; // Reusing stampCount for visits
   const totalVisits = data.stampThreshold || 10;
+  const tier = data.subtitle || 'Member';
   
   return {
     headerFields: [
       {
         key: 'visits',
-        label: 'VISITS LEFT',
-        value: `${visitsLeft} visits`,
-        textAlignment: 'PKTextAlignmentCenter'
+        label: 'Visits left',
+        value: `${visitsLeft}`,
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
     primaryFields: [
       {
-        key: 'status',
-        label: 'MULTIPASS STATUS',
-        value: visitsLeft > 0 ? 'Active' : 'Used',
+        key: 'visual',
+        label: '',
+        // Display visual visits using circles
+        value: (() => {
+          const maxDisplay = Math.min(totalVisits, 10);
+          const displayCount = Math.min(visitsLeft, maxDisplay);
+          const filled = Array(displayCount).fill('●').join(' ');
+          const empty = Array(Math.max(0, maxDisplay - displayCount)).fill('○').join(' ');
+          const visualVisits = [filled, empty].filter(Boolean).join(' ');
+          return visualVisits || Array(maxDisplay).fill('○').join(' ');
+        })(),
         textAlignment: 'PKTextAlignmentCenter'
       }
     ],
     secondaryFields: [
       {
-        key: 'remaining',
-        label: 'REMAINING',
-        value: `${visitsLeft} of ${totalVisits}`,
-        textAlignment: 'PKTextAlignmentCenter'
+        key: 'status',
+        label: tier,
+        value: visitsLeft > 0 ? `${visitsLeft} of ${totalVisits}` : 'Expired',
+        textAlignment: 'PKTextAlignmentLeft'
       }
     ],
+    auxiliaryFields: [],
     backFields: [
       {
         key: 'terms',

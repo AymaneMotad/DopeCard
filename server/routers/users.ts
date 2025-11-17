@@ -107,7 +107,31 @@ export const usersRouter = router({
                 const design = template.design as any || {};
                 const settings = template.settings as any || {};
                 
-                // Prepare card data for pass generation
+                // Get initial values from settings (new users start with 0, but threshold comes from settings)
+                const initialStamps = settings.initialStamps ?? 0; // Start with initial stamps if set, otherwise 0
+                const stampThreshold = settings.stampCount || 10; // Total stamps needed for reward
+                
+                // Log for debugging
+                console.log('User registration - stamp values:', {
+                    settingsInitialStamps: settings.initialStamps,
+                    initialStamps,
+                    settingsStampCount: settings.stampCount,
+                    stampThreshold,
+                    cardType,
+                });
+                const pointsBalance = settings.pointsBalance || 0;
+                const pointsRate = settings.pointsRate || 1;
+                const discountPercentage = settings.discountPercentage || 0;
+                const discountTiers = settings.discountTiers || [];
+                const cashbackPercentage = settings.cashbackPercentage || 0;
+                const cashbackEarned = settings.cashbackEarned || 0;
+                const balance = settings.balance || 0;
+                const classesPerMonth = settings.classesPerMonth || 0;
+                const visits = settings.visits || 0;
+                const expirationDate = settings.expirationDate || settings.endDate || null;
+                const offerDescription = settings.offerDescription || '';
+                
+                // Prepare card data for pass generation with all card-type-specific fields
                 const cardData = {
                     cardTitle: template.name,
                     businessName: settings.businessName || design.businessName || 'Business',
@@ -120,16 +144,38 @@ export const usersRouter = router({
                     logo: design.logo,
                     icon: design.icon,
                     strip: design.strip,
+                    // Stamp card fields
+                    stampCount: initialStamps, // Current stamps
+                    stampThreshold: stampThreshold, // Total stamps needed
+                    rewardsCollected: 0, // Start with 0 rewards collected
+                    // Points card fields
+                    pointsBalance: pointsBalance,
+                    pointsRate: pointsRate,
+                    nextRewardThreshold: 100, // Default threshold
+                    lifetimePoints: pointsBalance,
+                    tier: 'Bronze', // Default tier
+                    // Discount card fields
+                    discountPercentage: discountPercentage,
+                    discountTier: discountTiers.length > 0 ? 'Bronze' : 'None',
+                    visits: visits,
+                    // Cashback card fields
+                    cashbackPercentage: cashbackPercentage,
+                    cashbackEarned: cashbackEarned,
+                    cashbackStatus: 'Bronze', // Default status
+                    // Membership card fields
+                    expirationDate: expirationDate,
+                    classesPerMonth: classesPerMonth,
+                    membershipType: 'Standard',
+                    availableLimits: classesPerMonth,
+                    // Coupon card fields
+                    offerDescription: offerDescription,
+                    // Gift card fields
+                    balance: balance,
+                    cardNumber: serialNumber, // Use serial number as card number
+                    tagline: settings.tagline || '',
                 };
 
-                // Get initial values from settings
-                const initialStamps = settings.stampCount ? 0 : 0; // Start with 0 stamps
-                const pointsBalance = settings.pointsBalance || 0;
-                const discountPercentage = settings.discountPercentage || 0;
-                const cashbackPercentage = settings.cashbackPercentage || 0;
-                const balance = settings.balance || 0;
-
-                // Create userPass record
+                // Create userPass record with complete metadata
                 const [userPass] = await db.insert(userPasses).values({
                     userId: userId,
                     templateId: template.id,
@@ -138,10 +184,19 @@ export const usersRouter = router({
                     metadata: {
                         cardType: cardType,
                         stampCount: initialStamps,
+                        stampThreshold: stampThreshold,
                         pointsBalance: pointsBalance,
+                        pointsRate: pointsRate,
                         discountPercentage: discountPercentage,
+                        discountTiers: discountTiers,
                         cashbackPercentage: cashbackPercentage,
+                        cashbackEarned: cashbackEarned,
                         balance: balance,
+                        classesPerMonth: classesPerMonth,
+                        visits: visits,
+                        expirationDate: expirationDate,
+                        offerDescription: offerDescription,
+                        rewardsCollected: 0,
                         createdAt: new Date().toISOString(),
                     },
                 }).returning();
@@ -149,6 +204,15 @@ export const usersRouter = router({
                 let passBuffer;
                 
                 if (detectedPlatform === 'ios') {
+                    // Log before pass generation
+                    console.log('Generating iOS pass with:', {
+                        userId,
+                        initialStamps,
+                        cardType,
+                        cardDataStampCount: cardData.stampCount,
+                        cardDataStampThreshold: cardData.stampThreshold,
+                    });
+                    
                     // Generate pass with card template data
                     passBuffer = await generatePass(
                         userId, 
