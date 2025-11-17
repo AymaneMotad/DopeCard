@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { Coffee, Store, Scissors, Car, Utensils, Dumbbell } from 'lucide-react';
+import { Coffee, ShopIcon, Scissors, Car, Utensils, Dumbbell } from './icons';
 import { FloatingCard } from './floating-card';
 
 const businesses = [
   { icon: Coffee, name: "Cafés", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", delay: 0 },
-  { icon: Store, name: "Boutiques", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", delay: 0.2 },
+  { icon: ShopIcon, name: "Boutiques", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", delay: 0.2 },
   { icon: Scissors, name: "Salons", color: "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400", delay: 0.4 },
   { icon: Car, name: "Services", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", delay: 0.6 },
   { icon: Utensils, name: "Restaurants", color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400", delay: 0.8 },

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Play } from 'lucide-react';
+import { ArrowRight, Sparkles, Play } from './icons';
 import { Button } from '@/components/ui/button';
 import { BusinessShowcase } from './business-showcase';
 import { ScrollIndicator } from './scroll-indicator';

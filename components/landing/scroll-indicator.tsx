@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from './icons';
 
 export function ScrollIndicator() {
   const { scrollYProgress } = useScroll();

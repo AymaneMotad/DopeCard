@@ -1,3 +1,4 @@
+// Components
 export { AnimatedGradient } from './animated-gradient';
 export { FloatingCard } from './floating-card';
 export { GlassCard } from './glass-card';
@@ -8,4 +9,7 @@ export { ParticleBackground } from './particle-background';
 export { ScrollIndicator } from './scroll-indicator';
 export { BusinessShowcase } from './business-showcase';
 export { HeroSection } from './hero-section';
+
+// Icons - centralized icon exports
+export * from './icons';
 

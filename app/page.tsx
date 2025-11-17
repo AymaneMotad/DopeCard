@@ -1,13 +1,27 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { 
-  QrCode, Smartphone, Gift, TrendingUp, Users, Bell, Heart, 
-  Rocket, Shield, Globe, Award, Zap, Sparkles, Star, Clock, Store,
-  CheckCircle2, ArrowRight, BarChart3, Target, Lock, Zap as ZapIcon
-} from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import {
+  QrCode,
+  Smartphone,
+  Gift,
+  TrendingUp,
+  Users,
+  Bell,
+  Heart,
+  Rocket,
+  Shield,
+  Globe,
+  Award,
+  Zap,
+  Sparkles,
+  Star,
+  Clock,
+  Store,
+  CheckCircle2,
+} from '@/components/landing/icons';
 
 // Import components
 import { AnimatedGradient } from '@/components/landing/animated-gradient';
@@ -127,7 +141,7 @@ function FeaturesSection() {
             transition={{ type: "spring", duration: 0.5 }}
             className="inline-flex p-3 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 mb-6"
           >
-            <ZapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </motion.div>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6">
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
