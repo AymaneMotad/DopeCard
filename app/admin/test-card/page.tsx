@@ -196,14 +196,14 @@ export default function TestCardPage() {
     {
       title: "Card Type & Settings",
       content: (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <Label className="text-lg font-semibold mb-2">Card Type</Label>
+            <Label className="text-lg font-semibold mb-4 block">Card Type</Label>
             <Select
               value={formData.cardType}
               onValueChange={(value) => handleInputChange("cardType", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-12">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -266,11 +266,11 @@ export default function TestCardPage() {
           </div>
 
           <div>
-            <Label className="text-lg font-semibold mb-2">Card Expiration</Label>
+            <Label className="text-lg font-semibold mb-4 block">Card Expiration</Label>
             <RadioGroup
               value={formData.expiration}
               onValueChange={(value) => handleInputChange("expiration", value)}
-              className="flex space-x-4"
+              className="flex space-x-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="unlimited" id="unlimited" />
@@ -288,9 +288,9 @@ export default function TestCardPage() {
           </div>
 
           {formData.expiration === "timeRange" && (
-            <div className="flex space-x-4">
+            <div className="flex space-x-6">
               <div className="flex-1">
-                <Label htmlFor="startDate" className="font-medium">
+                <Label htmlFor="startDate" className="font-medium mb-2 block">
                   Start Date
                 </Label>
                 <Input
@@ -298,11 +298,11 @@ export default function TestCardPage() {
                   id="startDate"
                   value={formData.startDate}
                   onChange={(e) => handleInputChange("startDate", e.target.value)}
-                  className="mt-1"
+                  className="h-11"
                 />
               </div>
               <div className="flex-1">
-                <Label htmlFor="endDate" className="font-medium">
+                <Label htmlFor="endDate" className="font-medium mb-2 block">
                   End Date
                 </Label>
                 <Input
@@ -310,7 +310,7 @@ export default function TestCardPage() {
                   id="endDate"
                   value={formData.endDate}
                   onChange={(e) => handleInputChange("endDate", e.target.value)}
-                  className="mt-1"
+                  className="h-11"
                 />
               </div>
             </div>
@@ -319,7 +319,7 @@ export default function TestCardPage() {
           {formData.cardType === "stamp" && (
             <>
               <div>
-                <Label className="text-lg font-semibold mb-2">
+                <Label className="text-lg font-semibold mb-4 block">
                   Count of Stamps
                 </Label>
                 <Slider
@@ -330,14 +330,14 @@ export default function TestCardPage() {
                   onValueChange={(value) =>
                     handleInputChange("stampCount", value[0])
                   }
-                  className="mt-2"
+                  className="mt-4"
                 />
-                <div className="text-center mt-2 font-medium">
+                <div className="text-center mt-4 font-semibold text-lg">
                   {formData.stampCount} stamps
                 </div>
               </div>
               <div>
-                <Label className="text-lg font-semibold mb-2">
+                <Label className="text-lg font-semibold mb-4 block">
                   Initial Count of Stamps
                 </Label>
                 <Slider
@@ -348,9 +348,9 @@ export default function TestCardPage() {
                   onValueChange={(value) =>
                     handleInputChange("initialStamps", value[0])
                   }
-                  className="mt-2"
+                  className="mt-4"
                 />
-                <div className="text-center mt-2 font-medium">
+                <div className="text-center mt-4 font-semibold text-lg">
                   {formData.initialStamps} stamps
                 </div>
               </div>
@@ -359,7 +359,7 @@ export default function TestCardPage() {
 
           {formData.cardType === "points" && (
             <div>
-              <Label className="text-lg font-semibold mb-2">
+              <Label className="text-lg font-semibold mb-4 block">
                 Points Rate (points per purchase)
               </Label>
               <Slider
@@ -370,9 +370,9 @@ export default function TestCardPage() {
                 onValueChange={(value) =>
                   handleInputChange("pointsRate", value[0])
                 }
-                className="mt-2"
+                className="mt-4"
               />
-              <div className="text-center mt-2 font-medium">
+              <div className="text-center mt-4 font-semibold text-lg">
                 {formData.pointsRate}x points rate
               </div>
             </div>
@@ -380,7 +380,7 @@ export default function TestCardPage() {
 
           {formData.cardType === "discount" && (
             <div>
-              <Label className="text-lg font-semibold mb-2">
+              <Label className="text-lg font-semibold mb-4 block">
                 Discount Percentage (%)
               </Label>
               <Slider
@@ -391,9 +391,9 @@ export default function TestCardPage() {
                 onValueChange={(value) =>
                   handleInputChange("discountPercentage", value[0])
                 }
-                className="mt-2"
+                className="mt-4"
               />
-              <div className="text-center mt-2 font-medium">
+              <div className="text-center mt-4 font-semibold text-lg">
                 {formData.discountPercentage}% discount
               </div>
             </div>
@@ -597,20 +597,20 @@ export default function TestCardPage() {
           )}
 
           {/* Platform Selection */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <Label className="text-lg font-semibold mb-4 block">Platform Support</Label>
-            <p className="text-sm text-muted-foreground mb-4">
+          <div className="mt-10 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <Label className="text-lg font-semibold mb-2 block">Platform Support</Label>
+            <p className="text-sm text-muted-foreground mb-6">
               Select which platforms customers can use to add this card
             </p>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Apple className="h-5 w-5 text-gray-600" />
+              <div className="flex items-center justify-between p-5 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <Apple className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <Label htmlFor="platformAppleWallet" className="font-medium cursor-pointer">
+                    <Label htmlFor="platformAppleWallet" className="font-medium cursor-pointer text-base">
                       Apple Wallet (iOS)
                     </Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       For iPhone and iPad users
                     </p>
                   </div>
@@ -624,14 +624,14 @@ export default function TestCardPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Smartphone className="h-5 w-5 text-gray-600" />
+              <div className="flex items-center justify-between p-5 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <Smartphone className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <Label htmlFor="platformGoogleWallet" className="font-medium cursor-pointer">
+                    <Label htmlFor="platformGoogleWallet" className="font-medium cursor-pointer text-base">
                       Google Wallet (Android)
                     </Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       For Android phone users
                     </p>
                   </div>
@@ -645,14 +645,14 @@ export default function TestCardPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Smartphone className="h-5 w-5 text-gray-600" />
+              <div className="flex items-center justify-between p-5 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <Smartphone className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <Label htmlFor="platformPWA" className="font-medium cursor-pointer">
+                    <Label htmlFor="platformPWA" className="font-medium cursor-pointer text-base">
                       PWA (Web App)
                     </Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Fallback for devices without wallet apps
                     </p>
                   </div>
@@ -673,8 +673,8 @@ export default function TestCardPage() {
     {
       title: "Design",
       content: (
-        <div className="space-y-6">
-          <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+        <div className="space-y-8">
+          <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-700 dark:text-blue-300">
               <strong>Note:</strong> This test page uses default assets from the project.
               Logo, icon, and images are pre-configured and ready to use.
@@ -684,11 +684,11 @@ export default function TestCardPage() {
           <div>
             <Label
               htmlFor="backgroundColor"
-              className="text-lg font-semibold mb-2"
+              className="text-lg font-semibold mb-4 block"
             >
               Background Color
             </Label>
-            <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-4 mt-4">
               <div className="relative w-16 h-16">
                 <Input
                   id="backgroundColor"
@@ -716,10 +716,10 @@ export default function TestCardPage() {
           </div>
 
           <div>
-            <Label htmlFor="textColor" className="text-lg font-semibold mb-2">
+            <Label htmlFor="textColor" className="text-lg font-semibold mb-4 block">
               Text Color
             </Label>
-            <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-4 mt-4">
               <div className="relative w-16 h-16">
                 <Input
                   id="textColor"
@@ -745,10 +745,10 @@ export default function TestCardPage() {
           </div>
 
           <div>
-            <Label htmlFor="accentColor" className="text-lg font-semibold mb-2">
+            <Label htmlFor="accentColor" className="text-lg font-semibold mb-4 block">
               Accent Color
             </Label>
-            <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-4 mt-4">
               <div className="relative w-16 h-16">
                 <Input
                   id="accentColor"
@@ -778,54 +778,54 @@ export default function TestCardPage() {
     {
       title: "Information",
       content: (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <Label htmlFor="cardTitle" className="text-lg font-semibold mb-2">
+            <Label htmlFor="cardTitle" className="text-lg font-semibold mb-3 block">
               Card Title *
             </Label>
             <Input
               id="cardTitle"
               value={formData.cardTitle}
               onChange={(e) => handleInputChange("cardTitle", e.target.value)}
-              className="mt-2"
+              className="h-11"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="businessName" className="text-lg font-semibold mb-2">
+            <Label htmlFor="businessName" className="text-lg font-semibold mb-3 block">
               Business Name *
             </Label>
             <Input
               id="businessName"
               value={formData.businessName}
               onChange={(e) => handleInputChange("businessName", e.target.value)}
-              className="mt-2"
+              className="h-11"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="subtitle" className="text-lg font-semibold mb-2">
+            <Label htmlFor="subtitle" className="text-lg font-semibold mb-3 block">
               Subtitle
             </Label>
             <Input
               id="subtitle"
               value={formData.subtitle}
               onChange={(e) => handleInputChange("subtitle", e.target.value)}
-              className="mt-2"
+              className="h-11"
             />
           </div>
 
           <div>
-            <Label htmlFor="description" className="text-lg font-semibold mb-2">
+            <Label htmlFor="description" className="text-lg font-semibold mb-3 block">
               Description
             </Label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
-              className="w-full min-h-[100px] p-2 border rounded-md"
+              className="w-full min-h-[120px] p-4 border rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-primary"
               placeholder="Card description..."
             />
           </div>
@@ -835,17 +835,17 @@ export default function TestCardPage() {
     {
       title: "Save & Generate PDF",
       content: (
-        <div className="space-y-6">
-          <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+        <div className="space-y-8">
+          <div className="p-5 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
             <p className="text-sm text-green-700 dark:text-green-300">
               <strong>Ready to create your card!</strong> Review your settings and generate a PDF with QR code for distribution.
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-3">Card Summary</h3>
-              <div className="space-y-2 text-sm">
+          <div className="space-y-6">
+            <div className="p-6 border rounded-lg bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="font-semibold text-lg mb-4">Card Summary</h3>
+              <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Card Type:</span>
                   <span className="font-medium">{formData.cardType.charAt(0).toUpperCase() + formData.cardType.slice(1)}</span>
@@ -871,9 +871,9 @@ export default function TestCardPage() {
               </div>
             </div>
 
-            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <h3 className="font-semibold mb-2">What happens next?</h3>
-              <ul className="text-sm space-y-1 text-muted-foreground">
+            <div className="p-6 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              <h3 className="font-semibold text-lg mb-4">What happens next?</h3>
+              <ul className="text-sm space-y-2 text-muted-foreground">
                 <li>• Your card will be saved to the database</li>
                 <li>• A unique registration link will be generated</li>
                 <li>• A PDF with QR code will be created for distribution</li>
@@ -882,9 +882,9 @@ export default function TestCardPage() {
             </div>
 
             {/* PDF Preview */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-4">PDF Preview</h3>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+            <div className="mt-8">
+              <h3 className="font-semibold text-lg mb-6">PDF Preview</h3>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 bg-gray-50 dark:bg-gray-900">
                 <div 
                   className="mx-auto max-w-md rounded-lg shadow-lg overflow-hidden"
                   style={{
@@ -979,22 +979,22 @@ export default function TestCardPage() {
   };
 
   const Stepper = () => (
-    <div className="mb-12 relative">
-      <div className="flex justify-between mb-2 relative">
+    <div className="mb-16 relative">
+      <div className="flex justify-between mb-4 relative">
         {steps.map((step, index) => (
           <div
             key={index}
             className="flex flex-col items-center relative z-10 w-1/3"
           >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              className={`w-14 h-14 rounded-full flex items-center justify-center ${
                 index <= currentStep
                   ? "bg-primary text-primary-foreground"
-                  : "bg-gray-100"
+                  : "bg-gray-100 dark:bg-gray-800"
               } shadow-lg transition-all duration-300 ease-in-out`}
             >
               {index < currentStep ? (
-                <Check className="w-6 h-6" />
+                <Check className="w-7 h-7" />
               ) : (
                 <span
                   className={`text-lg font-bold ${
@@ -1008,21 +1008,21 @@ export default function TestCardPage() {
               )}
             </div>
             <div
-              className={`mt-4 text-center transition-all duration-300 ease-in-out ${
+              className={`mt-5 text-center transition-all duration-300 ease-in-out ${
                 index <= currentStep
                   ? "text-primary scale-110"
                   : "text-gray-400"
               }`}
             >
-              <h3 className="text-sm font-bold mb-1">{step.title}</h3>
+              <h3 className="text-sm font-bold mb-2">{step.title}</h3>
               <span className="text-xs">{getStepDescription(index)}</span>
             </div>
           </div>
         ))}
       </div>
-      <div className="absolute top-6 left-0 w-full h-0.5 bg-gray-200 -z-10" />
+      <div className="absolute top-7 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -z-10" />
       <div
-        className="absolute top-6 left-0 h-0.5 bg-primary -z-10 transition-all duration-300 ease-in-out"
+        className="absolute top-7 left-0 h-0.5 bg-primary -z-10 transition-all duration-300 ease-in-out"
         style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
       />
     </div>
@@ -1257,29 +1257,29 @@ export default function TestCardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/15 dark:from-slate-950 dark:via-blue-950/15 dark:to-purple-950/10">
-      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-700/80 to-purple-700/60 dark:from-slate-100 dark:via-blue-300/80 dark:to-purple-300/60 bg-clip-text text-transparent mb-2">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl">
+        <div className="mb-12">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-700/80 to-purple-700/60 dark:from-slate-100 dark:via-blue-300/80 dark:to-purple-300/60 bg-clip-text text-transparent mb-4">
             Test Card Generator
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-lg">
             Create and test loyalty cards with default assets. Perfect for quick testing without uploading files.
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="w-full lg:w-1/2 p-6 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-md overflow-y-auto max-h-[calc(100vh-200px)]">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          <div className="w-full lg:w-1/2 p-8 lg:p-10 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg overflow-y-auto max-h-[calc(100vh-200px)]">
             <Stepper />
-            <div className="space-y-6">
+            <div className="space-y-8">
               {steps.map((step, index) => (
                 <Card key={index} className={index === currentStep ? "" : "hidden"}>
-                  <CardContent className="p-6">
-                    <h2 className="text-2xl font-bold mb-6">{step.title}</h2>
+                  <CardContent className="p-8">
+                    <h2 className="text-2xl font-bold mb-8">{step.title}</h2>
                     {step.content}
                   </CardContent>
                 </Card>
               ))}
-              <div className="flex justify-between mt-8">
+              <div className="flex justify-between mt-10 pt-6 border-t border-slate-200 dark:border-slate-800">
                 <Button
                   onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
                   disabled={currentStep === 0}
@@ -1318,13 +1318,13 @@ export default function TestCardPage() {
             </div>
           </div>
 
-          <div className="w-full lg:w-1/2 p-6 bg-slate-100 dark:bg-slate-800 rounded-lg flex flex-col items-center">
-            <div className="flex gap-4 mb-4">
+          <div className="w-full lg:w-1/2 p-8 lg:p-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex flex-col items-center">
+            <div className="flex gap-4 mb-6">
               <Button
                 variant={previewDevice === "iphone" ? "default" : "outline"}
                 size="icon"
                 onClick={() => setPreviewDevice("iphone")}
-                className="w-12 h-12 rounded-full"
+                className="w-14 h-14 rounded-full"
               >
                 <Apple className="w-6 h-6" />
               </Button>
@@ -1332,12 +1332,12 @@ export default function TestCardPage() {
                 variant={previewDevice === "android" ? "default" : "outline"}
                 size="icon"
                 onClick={() => setPreviewDevice("android")}
-                className="w-12 h-12 rounded-full"
+                className="w-14 h-14 rounded-full"
               >
                 <Smartphone className="w-6 h-6" />
               </Button>
             </div>
-            <Card className="p-8 bg-white shadow-lg rounded-2xl">
+            <Card className="p-10 bg-white shadow-xl rounded-2xl">
               <PhoneMockup>
                 <PassPreview />
               </PhoneMockup>

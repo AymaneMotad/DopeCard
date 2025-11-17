@@ -45,24 +45,24 @@ export default function CardsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-950 dark:via-blue-950/20 dark:to-purple-950/20">
-      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-6"
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
               My Cards
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-lg">
               Choose a pre-designed template or create a custom card
             </p>
           </div>
         <Link href="/cards/create">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
-            <Plus className="h-4 w-4 mr-2" />
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg h-12 px-6">
+            <Plus className="h-5 w-5 mr-2" />
               Create Custom Card
           </Button>
         </Link>
@@ -73,34 +73,34 @@ export default function CardsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-12"
+          className="mb-16"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500">
-              <Sparkles className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg">
+              <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 Pre-designed Templates
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Choose from professionally designed templates that work perfectly with pass generation
               </p>
             </div>
           </div>
 
           {/* Template Type Filter */}
-          <Tabs value={selectedType} onValueChange={(v) => setSelectedType(v as any)} className="mb-6">
-            <TabsList className="grid w-full max-w-md grid-cols-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="stamp">Stamps</TabsTrigger>
-              <TabsTrigger value="points">Points</TabsTrigger>
-              <TabsTrigger value="discount">Discount</TabsTrigger>
+          <Tabs value={selectedType} onValueChange={(v) => setSelectedType(v as any)} className="mb-8">
+            <TabsList className="grid w-full max-w-md grid-cols-4 h-12">
+              <TabsTrigger value="all" className="text-sm font-medium">All</TabsTrigger>
+              <TabsTrigger value="stamp" className="text-sm font-medium">Stamps</TabsTrigger>
+              <TabsTrigger value="points" className="text-sm font-medium">Points</TabsTrigger>
+              <TabsTrigger value="discount" className="text-sm font-medium">Discount</TabsTrigger>
             </TabsList>
           </Tabs>
 
           {/* Templates Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredTemplates.map((template, index) => (
               <TemplateCard
                 key={template.id}
@@ -118,31 +118,31 @@ export default function CardsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500">
-              <Grid3x3 className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg">
+              <Grid3x3 className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 Your Cards
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Manage your existing loyalty cards
               </p>
             </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="border-0 shadow-lg overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 rounded-lg z-0" />
-                  <CardHeader className="relative z-10">
-                    <Skeleton className="h-6 w-32 mb-2 bg-white/50" />
-                    <Skeleton className="h-4 w-48 bg-white/30" />
+                  <CardHeader className="relative z-10 p-6">
+                    <Skeleton className="h-7 w-40 mb-3 bg-white/50" />
+                    <Skeleton className="h-4 w-56 bg-white/30" />
               </CardHeader>
-                  <CardContent className="relative z-10">
-                    <Skeleton className="h-10 w-full bg-white/50" />
+                  <CardContent className="relative z-10 p-6 pt-0">
+                    <Skeleton className="h-11 w-full bg-white/50" />
                   </CardContent>
                 </Card>
               ))}
@@ -150,20 +150,20 @@ export default function CardsPage() {
           ) : isError ? (
             <Card className="border-0 shadow-lg relative">
               <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 rounded-lg z-0" />
-              <CardContent className="relative z-10 flex flex-col items-center justify-center py-12">
-                <p className="text-red-500 dark:text-red-400 mb-4 text-center">
+              <CardContent className="relative z-10 flex flex-col items-center justify-center py-16 px-6">
+                <p className="text-red-500 dark:text-red-400 mb-6 text-center text-lg">
                   Error loading cards. Please try again.
                 </p>
                 <Button
                   onClick={() => window.location.reload()}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-11 px-6"
                 >
                   Reload
                 </Button>
               </CardContent>
             </Card>
           ) : stableCards && stableCards.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {stableCards.map((card: any) => (
                 <motion.div
                   key={card.key}
@@ -174,20 +174,20 @@ export default function CardsPage() {
                   transition={{ duration: 0.2 }}
                   style={{ willChange: 'transform' }}
                 >
-                  <Card className="cursor-pointer hover:shadow-xl transition-shadow duration-200 border-0 shadow-lg overflow-hidden relative">
+                  <Card className="cursor-pointer hover:shadow-xl transition-all duration-200 border-0 shadow-lg overflow-hidden relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 rounded-lg z-0" />
-                    <CardHeader className="relative z-10">
-                      <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <CardHeader className="relative z-10 p-6 pb-4">
+                      <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                         {card.name || 'Unnamed Card'}
                       </CardTitle>
-                      <CardDescription className="text-gray-600 dark:text-gray-400">
+                      <CardDescription className="text-gray-600 dark:text-gray-400 text-base">
                         Type: {card.type || 'N/A'} | {card.active ? 'Active' : 'Inactive'}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="relative z-10">
+                    <CardContent className="relative z-10 p-6 pt-0">
                 <Button
                   variant="outline"
-                        className="w-full border-2 border-blue-200 dark:border-blue-800 hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:text-white hover:border-transparent transition-all"
+                        className="w-full h-11 border-2 border-blue-200 dark:border-blue-800 hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:text-white hover:border-transparent transition-all font-medium"
                   onClick={() => router.push(`/cards/${card.id}`)}
                 >
                   View Details
@@ -200,16 +200,16 @@ export default function CardsPage() {
       ) : (
             <Card className="border-0 shadow-lg overflow-hidden relative">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 rounded-lg z-0" />
-              <CardContent className="relative z-10 flex flex-col items-center justify-center py-12">
-                <div className="p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-4">
-                  <Grid3x3 className="h-8 w-8 text-white" />
+              <CardContent className="relative z-10 flex flex-col items-center justify-center py-16 px-6">
+                <div className="p-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mb-6 shadow-lg">
+                  <Grid3x3 className="h-10 w-10 text-white" />
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 mb-4 text-center font-medium">
+                <p className="text-gray-700 dark:text-gray-300 mb-6 text-center font-medium text-lg">
                   No cards created yet. Choose a template above to get started!
                 </p>
             <Link href="/cards/create">
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
-                <Plus className="h-4 w-4 mr-2" />
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg h-12 px-6">
+                <Plus className="h-5 w-5 mr-2" />
                 Create Your First Card
               </Button>
             </Link>
