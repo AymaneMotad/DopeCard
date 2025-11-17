@@ -12,9 +12,22 @@ vi.mock('@/app/utils/pass-generation/pass-generation', () => ({
   generateGooglePass: vi.fn(),
 }));
 
+// Mock the PWA generator to prevent fallback during tests
+vi.mock('@/modules/pass-generation/pwa-generator', () => ({
+  generatePWAPass: vi.fn(() => ({
+    type: 'pwa',
+    url: 'https://example.com/cards/test-user?userId=test-user&cardType=stamp',
+  })),
+  shouldUsePWAFallback: vi.fn(() => false),
+  isGoogleWalletAvailable: vi.fn(() => true),
+}));
+
 describe('generatePassForPlatform', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Restore PWA generator mocks
+    const { shouldUsePWAFallback } = await import('@/modules/pass-generation/pwa-generator');
+    vi.mocked(shouldUsePWAFallback).mockReturnValue(false);
   });
 
   it('should generate iOS pass', async () => {
@@ -30,7 +43,7 @@ describe('generatePassForPlatform', () => {
     expect(result.platform).toBe('ios');
     expect(result.data).toBe(mockBuffer.toString('base64'));
     expect(result.mimeType).toBe('application/vnd.apple.pkpass');
-    expect(generatePass).toHaveBeenCalledWith('test-user', 5);
+    expect(generatePass).toHaveBeenCalledWith('test-user', 5, 'stamp', undefined);
   });
 
   it('should generate Android pass', async () => {
@@ -45,7 +58,7 @@ describe('generatePassForPlatform', () => {
 
     expect(result.platform).toBe('android');
     expect(result.data).toBe('https://pay.google.com/gp/v/save/test-token');
-    expect(generateGooglePass).toHaveBeenCalledWith('test-user', 5);
+    expect(generateGooglePass).toHaveBeenCalledWith('test-user', 5, 'stamp', undefined);
   });
 
   it('should use default stamp count of 0', async () => {
@@ -57,16 +70,21 @@ describe('generatePassForPlatform', () => {
       platform: 'ios',
     });
 
-    expect(generatePass).toHaveBeenCalledWith('test-user', 0);
+    expect(generatePass).toHaveBeenCalledWith('test-user', 0, 'stamp', undefined);
   });
 
-  it('should throw error for unsupported platform', async () => {
-    await expect(
-      generatePassForPlatform({
-        userId: 'test-user',
-        platform: 'unknown' as 'ios',
-      })
-    ).rejects.toThrow('Unsupported platform');
+  it('should return PWA for unsupported platform', async () => {
+    const { shouldUsePWAFallback } = await import('@/modules/pass-generation/pwa-generator');
+    vi.mocked(shouldUsePWAFallback).mockReturnValueOnce(true);
+
+    const result = await generatePassForPlatform({
+      userId: 'test-user',
+      platform: 'unknown' as 'ios',
+    });
+
+    expect(result.platform).toBe('pwa');
+    expect(result.data).toHaveProperty('type', 'pwa');
+    expect(result.data).toHaveProperty('url');
   });
 });
 
