@@ -89,6 +89,7 @@ export const passTemplates = pgTable("pass_templates", {
   clientId: uuid("client_id").notNull().references(() => client.id),
   name: text("name").notNull(),
   type: passTypeEnum("type").notNull(),
+  cardType: text("card_type"), // 'stamp', 'points', 'discount', 'cashback', 'multipass', 'coupon', 'reward', 'membership', 'gift'
   design: jsonb("design").notNull(),
   settings: jsonb("settings"),
   active: boolean("active").notNull().default(true),

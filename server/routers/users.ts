@@ -8,6 +8,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { eq } from 'drizzle-orm';
 
 export const usersRouter = router({
+    // Create user (PUBLIC - No authentication required)
+    // This endpoint is used for customer registration flow
+    // Anyone can register with name, email, phone number - no password required
+    // Per PRD 2.2.1: Customer registration form collects name, email, phone
     create: publicProcedure
         .input(
             z.object({
@@ -85,7 +89,7 @@ export const usersRouter = router({
                 const userId = userResult[0].id;
                 const serialNumber = `COFFEE${userId}`;
                 
-                // Get default template or use provided one
+                // Get template or use provided one
                 let template;
                 if (input.templateId) {
                     template = await db.query.passTemplates.findFirst({
@@ -93,20 +97,51 @@ export const usersRouter = router({
                     });
                 }
                 
-                // If no template, create a default one or use first available
+                // If no template provided, throw error (card must exist)
                 if (!template) {
-                    // For now, we'll create a userPass without template
-                    // In production, you'd want to ensure a template exists
+                    throw new Error('Card template not found. Please scan a valid QR code.');
                 }
+
+                // Extract card data from template
+                const cardType = template.cardType || 'stamp';
+                const design = template.design as any || {};
+                const settings = template.settings as any || {};
+                
+                // Prepare card data for pass generation
+                const cardData = {
+                    cardTitle: template.name,
+                    businessName: settings.businessName || design.businessName || 'Business',
+                    subtitle: settings.subtitle || '',
+                    description: settings.description || template.name,
+                    backgroundColor: design.backgroundColor || '#59341C',
+                    textColor: design.textColor || '#FFFFFF',
+                    accentColor: design.accentColor || '#FF8C00',
+                    // Include template assets
+                    logo: design.logo,
+                    icon: design.icon,
+                    strip: design.strip,
+                };
+
+                // Get initial values from settings
+                const initialStamps = settings.stampCount ? 0 : 0; // Start with 0 stamps
+                const pointsBalance = settings.pointsBalance || 0;
+                const discountPercentage = settings.discountPercentage || 0;
+                const cashbackPercentage = settings.cashbackPercentage || 0;
+                const balance = settings.balance || 0;
 
                 // Create userPass record
                 const [userPass] = await db.insert(userPasses).values({
                     userId: userId,
-                    templateId: template?.id || null, // Will be set when card creation system is implemented
+                    templateId: template.id,
                     serialNumber: serialNumber,
                     status: 'active',
                     metadata: {
-                        stampCount: 0,
+                        cardType: cardType,
+                        stampCount: initialStamps,
+                        pointsBalance: pointsBalance,
+                        discountPercentage: discountPercentage,
+                        cashbackPercentage: cashbackPercentage,
+                        balance: balance,
                         createdAt: new Date().toISOString(),
                     },
                 }).returning();
@@ -114,7 +149,13 @@ export const usersRouter = router({
                 let passBuffer;
                 
                 if (detectedPlatform === 'ios') {
-                    passBuffer = await generatePass(userId, 0); // Start with 0 stamps
+                    // Generate pass with card template data
+                    passBuffer = await generatePass(
+                        userId, 
+                        initialStamps,
+                        cardType,
+                        cardData
+                    );
                     
                     // Convert buffer to base64
                     const base64Pass = passBuffer.toString('base64');
@@ -128,7 +169,13 @@ export const usersRouter = router({
                         }
                     };
                 } else if (detectedPlatform === 'android') {
-                    passBuffer = await generateGooglePass(userId, 0);
+                    // Generate Google Pass with card template data
+                    passBuffer = await generateGooglePass(
+                        userId, 
+                        initialStamps,
+                        cardType,
+                        cardData
+                    );
                     return {
                         user: userResult[0],
                         pass: userPass,

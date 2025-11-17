@@ -16,7 +16,9 @@ export const CARD_TYPES = {
   MEMBERSHIP: 'membership',
   MULTIPASS: 'multipass',
   CASH_BACK: 'cash_back',
-  CERTIFICATE: 'certificate',
+  REWARD: 'reward',
+  GIFT: 'gift',
+  CERTIFICATE: 'certificate', // Alias for gift
 } as const;
 
 export const PLATFORMS = {

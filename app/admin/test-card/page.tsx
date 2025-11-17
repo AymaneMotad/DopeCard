@@ -16,8 +16,15 @@ import {
   Stamp,
   Coins,
   Percent,
+  Gift,
+  Ticket,
+  CreditCard,
+  Users,
+  Award,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 import { trpc } from "@/server/client";
 import { useRouter } from "next/navigation";
 
@@ -41,14 +48,23 @@ export default function TestCardPage() {
   const [platform, setPlatform] = useState<string | null>("unknown"); // Track platform
   const [isClient, setIsClient] = useState(false); // Track client-side rendering
   const [formData, setFormData] = useState({
-    cardType: "stamp" as "stamp" | "points" | "discount",
+    cardType: "stamp" as "stamp" | "points" | "discount" | "cashback" | "multipass" | "coupon" | "reward" | "membership" | "gift",
     expiration: "unlimited",
     startDate: "",
     endDate: "",
     stampCount: 10,
     initialStamps: 0,
     pointsRate: 1,
+    pointsBalance: 0,
     discountTiers: [5, 10, 15],
+    discountPercentage: 0,
+    cashbackPercentage: 0,
+    cashbackEarned: 0,
+    balance: 0,
+    visits: 0,
+    classesPerMonth: 0,
+    expirationDate: "",
+    offerDescription: "",
     backgroundColor: "#59341C",
     textColor: "#FFFFFF",
     accentColor: "#FF8C00",
@@ -56,6 +72,10 @@ export default function TestCardPage() {
     businessName: "Test Business",
     subtitle: "Member",
     description: "",
+    // Platform selection
+    platformAppleWallet: true,
+    platformGoogleWallet: true,
+    platformPWA: false,
   });
 
   useEffect(() => {
@@ -82,6 +102,9 @@ export default function TestCardPage() {
     }
   }, [isClient]);
 
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const createCard = trpc.cards.create.useMutation();
   const generateTestPass = trpc.passes.generateTestPass.useMutation({
     onSuccess: (data) => {
       try {
@@ -200,6 +223,42 @@ export default function TestCardPage() {
                   <div className="flex items-center gap-2">
                     <Percent className="h-4 w-4" />
                     <span>Discount Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="cashback">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    <span>Cashback Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="multipass">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4" />
+                    <span>Multipass Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="coupon">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4" />
+                    <span>Coupon Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="reward">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    <span>Reward Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="membership">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Membership Card</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="gift">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-4 w-4" />
+                    <span>Gift Card</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -322,27 +381,292 @@ export default function TestCardPage() {
           {formData.cardType === "discount" && (
             <div>
               <Label className="text-lg font-semibold mb-2">
-                Discount Tiers (%)
+                Discount Percentage (%)
               </Label>
-              <div className="space-y-2">
-                <Input
-                  type="text"
-                  value={formData.discountTiers.join(", ")}
-                  onChange={(e) => {
-                    const tiers = e.target.value
-                      .split(",")
-                      .map((t) => parseInt(t.trim()))
-                      .filter((t) => !isNaN(t));
-                    handleInputChange("discountTiers", tiers);
-                  }}
-                  placeholder="5, 10, 15"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Enter discount percentages separated by commas
-                </p>
+              <Slider
+                min={0}
+                max={100}
+                step={1}
+                value={[formData.discountPercentage]}
+                onValueChange={(value) =>
+                  handleInputChange("discountPercentage", value[0])
+                }
+                className="mt-2"
+              />
+              <div className="text-center mt-2 font-medium">
+                {formData.discountPercentage}% discount
               </div>
             </div>
           )}
+
+          {formData.cardType === "cashback" && (
+            <>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Cashback Percentage (%)
+                </Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={[formData.cashbackPercentage]}
+                  onValueChange={(value) =>
+                    handleInputChange("cashbackPercentage", value[0])
+                  }
+                  className="mt-2"
+                />
+                <div className="text-center mt-2 font-medium">
+                  {formData.cashbackPercentage}% cashback
+                </div>
+              </div>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Cashback Earned (£)
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.cashbackEarned}
+                  onChange={(e) =>
+                    handleInputChange("cashbackEarned", parseFloat(e.target.value) || 0)
+                  }
+                />
+              </div>
+            </>
+          )}
+
+          {formData.cardType === "multipass" && (
+            <>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Total Visits
+                </Label>
+                <Slider
+                  min={1}
+                  max={50}
+                  step={1}
+                  value={[formData.stampCount]}
+                  onValueChange={(value) =>
+                    handleInputChange("stampCount", value[0])
+                  }
+                  className="mt-2"
+                />
+                <div className="text-center mt-2 font-medium">
+                  {formData.stampCount} visits
+                </div>
+              </div>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Visits Used
+                </Label>
+                <Slider
+                  min={0}
+                  max={formData.stampCount}
+                  step={1}
+                  value={[formData.initialStamps]}
+                  onValueChange={(value) =>
+                    handleInputChange("initialStamps", value[0])
+                  }
+                  className="mt-2"
+                />
+                <div className="text-center mt-2 font-medium">
+                  {formData.initialStamps} visits used
+                </div>
+              </div>
+            </>
+          )}
+
+          {formData.cardType === "coupon" && (
+            <>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Offer Description
+                </Label>
+                <Input
+                  type="text"
+                  value={formData.offerDescription}
+                  onChange={(e) =>
+                    handleInputChange("offerDescription", e.target.value)
+                  }
+                  placeholder="e.g., Free stretching class every Tuesday"
+                />
+              </div>
+              {formData.expiration === "timeRange" && formData.endDate && (
+                <div>
+                  <Label className="text-lg font-semibold mb-2">
+                    Expiration Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => {
+                      handleInputChange("endDate", e.target.value);
+                      handleInputChange("expirationDate", e.target.value);
+                    }}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {formData.cardType === "reward" && (
+            <>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Points Balance
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.pointsBalance}
+                  onChange={(e) =>
+                    handleInputChange("pointsBalance", parseInt(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Points Rate (points per purchase)
+                </Label>
+                <Slider
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={[formData.pointsRate]}
+                  onValueChange={(value) =>
+                    handleInputChange("pointsRate", value[0])
+                  }
+                  className="mt-2"
+                />
+                <div className="text-center mt-2 font-medium">
+                  {formData.pointsRate}x points rate
+                </div>
+              </div>
+            </>
+          )}
+
+          {formData.cardType === "membership" && (
+            <>
+              <div>
+                <Label className="text-lg font-semibold mb-2">
+                  Classes Per Month
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.classesPerMonth}
+                  onChange={(e) =>
+                    handleInputChange("classesPerMonth", parseInt(e.target.value) || 0)
+                  }
+                />
+              </div>
+              {formData.expiration === "timeRange" && formData.endDate && (
+                <div>
+                  <Label className="text-lg font-semibold mb-2">
+                    Valid Until
+                  </Label>
+                  <Input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => {
+                      handleInputChange("endDate", e.target.value);
+                      handleInputChange("expirationDate", e.target.value);
+                    }}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {formData.cardType === "gift" && (
+            <div>
+              <Label className="text-lg font-semibold mb-2">
+                Gift Card Balance (£)
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={formData.balance}
+                onChange={(e) =>
+                  handleInputChange("balance", parseFloat(e.target.value) || 0)
+                }
+              />
+            </div>
+          )}
+
+          {/* Platform Selection */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <Label className="text-lg font-semibold mb-4 block">Platform Support</Label>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select which platforms customers can use to add this card
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Apple className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <Label htmlFor="platformAppleWallet" className="font-medium cursor-pointer">
+                      Apple Wallet (iOS)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      For iPhone and iPad users
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="platformAppleWallet"
+                  checked={formData.platformAppleWallet}
+                  onChange={(e) => handleInputChange("platformAppleWallet", e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Smartphone className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <Label htmlFor="platformGoogleWallet" className="font-medium cursor-pointer">
+                      Google Wallet (Android)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      For Android phone users
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="platformGoogleWallet"
+                  checked={formData.platformGoogleWallet}
+                  onChange={(e) => handleInputChange("platformGoogleWallet", e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Smartphone className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <Label htmlFor="platformPWA" className="font-medium cursor-pointer">
+                      PWA (Web App)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Fallback for devices without wallet apps
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="platformPWA"
+                  checked={formData.platformPWA}
+                  onChange={(e) => handleInputChange("platformPWA", e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       ),
     },
@@ -508,6 +832,135 @@ export default function TestCardPage() {
         </div>
       ),
     },
+    {
+      title: "Save & Generate PDF",
+      content: (
+        <div className="space-y-6">
+          <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+            <p className="text-sm text-green-700 dark:text-green-300">
+              <strong>Ready to create your card!</strong> Review your settings and generate a PDF with QR code for distribution.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <h3 className="font-semibold mb-3">Card Summary</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Card Type:</span>
+                  <span className="font-medium">{formData.cardType.charAt(0).toUpperCase() + formData.cardType.slice(1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Card Title:</span>
+                  <span className="font-medium">{formData.cardTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Business Name:</span>
+                  <span className="font-medium">{formData.businessName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platforms:</span>
+                  <span className="font-medium">
+                    {[
+                      formData.platformAppleWallet && 'iOS',
+                      formData.platformGoogleWallet && 'Android',
+                      formData.platformPWA && 'PWA'
+                    ].filter(Boolean).join(', ') || 'None selected'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+              <h3 className="font-semibold mb-2">What happens next?</h3>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                <li>• Your card will be saved to the database</li>
+                <li>• A unique registration link will be generated</li>
+                <li>• A PDF with QR code will be created for distribution</li>
+                <li>• You can download and print the PDF for customers</li>
+              </ul>
+            </div>
+
+            {/* PDF Preview */}
+            <div className="mt-6">
+              <h3 className="font-semibold mb-4">PDF Preview</h3>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                <div 
+                  className="mx-auto max-w-md rounded-lg shadow-lg overflow-hidden"
+                  style={{
+                    backgroundColor: formData.backgroundColor,
+                    color: formData.textColor,
+                  }}
+                >
+                  {/* PDF Header */}
+                  <div className="p-6 text-center">
+                    <h2 className="text-xl font-bold mb-2" style={{ color: formData.textColor }}>
+                      {formData.businessName}
+                    </h2>
+                    <p className="text-sm opacity-90" style={{ color: formData.textColor }}>
+                      {formData.cardTitle}
+                    </p>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="px-6 pb-4 space-y-2 text-sm" style={{ color: formData.textColor }}>
+                    <p className="font-semibold text-base">
+                      {formData.cardType === 'stamp' 
+                        ? 'Collect stamps to get a reward'
+                        : formData.cardType === 'points'
+                        ? 'Collect points to get a reward'
+                        : 'Join our loyalty program'}
+                    </p>
+                    <p>Scan QR code by your phone camera</p>
+                    <p>and install digital card in Apple Wallet</p>
+                    <p>on Phone or Google Pay on Android</p>
+                    <p className="pt-2">Get your reward after</p>
+                    <p>
+                      {formData.cardType === 'stamp'
+                        ? `receiving ${formData.stampCount || 10} stamps`
+                        : formData.cardType === 'points'
+                        ? 'collecting enough points'
+                        : 'making more visits'}
+                    </p>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="px-6 pb-4 flex flex-col items-center">
+                    <div className="bg-white p-3 rounded">
+                      {(() => {
+                        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+                        const previewLink = `${baseUrl}/register/test-${formData.cardType}-preview`;
+                        return (
+                          <QRCodeSVG 
+                            value={previewLink} 
+                            size={120}
+                            bgColor="#000000"
+                            fgColor="#FFFFFF"
+                          />
+                        );
+                      })()}
+                    </div>
+                    <p className="text-xs mt-3 opacity-80 break-all px-2 text-center" style={{ color: formData.textColor }}>
+                      {(() => {
+                        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+                        return `${baseUrl}/register/test-${formData.cardType}-preview`;
+                      })()}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 pb-4 text-center">
+                    <p className="text-xs opacity-70" style={{ color: formData.textColor }}>
+                      {formData.businessName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
   ];
 
   const getStepDescription = (index: number) => {
@@ -518,6 +971,8 @@ export default function TestCardPage() {
         return "Customize appearance";
       case 2:
         return "Add card details";
+      case 3:
+        return "Save card and generate PDF";
       default:
         return "";
     }
@@ -745,25 +1200,59 @@ export default function TestCardPage() {
     );
   };
 
-  const handleGenerate = () => {
-    generateTestPass.mutate({
-      cardType: formData.cardType,
-      stampCount: formData.stampCount,
-      initialStamps: formData.initialStamps,
-      pointsRate: formData.pointsRate,
-      discountTiers: formData.discountTiers,
-      backgroundColor: formData.backgroundColor,
-      textColor: formData.textColor,
-      accentColor: formData.accentColor,
-      cardTitle: formData.cardTitle,
-      businessName: formData.businessName,
-      subtitle: formData.subtitle,
-      description: formData.description,
-      expiration: formData.expiration,
-      startDate: formData.startDate || undefined,
-      endDate: formData.endDate || undefined,
-      platform: platform as 'ios' | 'android' | 'unknown',
-    });
+  const handleGenerate = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      // First, create the card in the database
+      const cardResult = await createCard.mutateAsync({
+        type: 'loyalty', // Apple Wallet pass type
+        cardType: formData.cardType,
+        name: formData.cardTitle,
+        businessName: formData.businessName,
+        description: formData.description,
+        backgroundColor: formData.backgroundColor,
+        textColor: formData.textColor,
+        accentColor: formData.accentColor,
+        logo: DEFAULT_ASSETS.logo,
+        icon: DEFAULT_ASSETS.icon,
+        expiration: formData.expiration === 'unlimited' ? 'none' : formData.expiration,
+        stampCount: formData.cardType === 'stamp' ? formData.stampCount : undefined,
+        pointsRate: formData.cardType === 'points' ? formData.pointsRate : undefined,
+        discountTiers: formData.cardType === 'discount' ? formData.discountTiers : undefined,
+        discountPercentage: formData.cardType === 'discount' ? formData.discountPercentage : undefined,
+        cashbackPercentage: formData.cardType === 'cashback' ? formData.cashbackPercentage : undefined,
+        balance: formData.cardType === 'gift' ? formData.balance : undefined,
+        classesPerMonth: formData.cardType === 'membership' ? formData.classesPerMonth : undefined,
+        platformAppleWallet: formData.platformAppleWallet,
+        platformGoogleWallet: formData.platformGoogleWallet,
+        platformPWA: formData.platformPWA,
+        active: true, // Activate the card so it can be accessed publicly
+      });
+
+      const cardId = cardResult.card.id;
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      const registrationLink = `${baseUrl}/register/${cardId}`;
+
+      // Generate PDF with the correct registration link
+      const { generateCardPDFWithJSPDF } = await import('@/app/utils/pdf-generator-client');
+      await generateCardPDFWithJSPDF({
+        cardTitle: formData.cardTitle,
+        businessName: formData.businessName,
+        cardType: formData.cardType,
+        backgroundColor: formData.backgroundColor,
+        textColor: formData.textColor,
+        description: formData.description,
+        registrationLink,
+        stampCount: formData.stampCount || 10,
+      });
+      
+      alert(`Card created successfully!\n\nCard ID: ${cardId}\nRegistration Link: ${registrationLink}\n\nPDF downloaded.`);
+    } catch (error: any) {
+      console.error('Error creating card or generating PDF:', error);
+      alert(`Error: ${error.message || 'Failed to create card or generate PDF'}`);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   return (
@@ -803,15 +1292,26 @@ export default function TestCardPage() {
                     onClick={() =>
                       setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1))
                     }
+                    disabled={
+                      (currentStep === 0 && !formData.cardType) ||
+                      (currentStep === 2 && (!formData.cardTitle || !formData.businessName))
+                    }
                   >
                     Next
                   </Button>
                 ) : (
                   <Button
                     onClick={handleGenerate}
-                    disabled={generateTestPass.isLoading || !formData.cardTitle || !formData.businessName}
+                    disabled={createCard.isLoading || isGeneratingPDF || !formData.cardTitle || !formData.businessName}
                   >
-                    {generateTestPass.isLoading ? "Generating..." : "Generate Test Pass"}
+                    {createCard.isLoading || isGeneratingPDF ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>{createCard.isLoading ? 'Saving Card...' : 'Generating PDF...'}</span>
+                      </div>
+                    ) : (
+                      "Save Card & Generate PDF"
+                    )}
                   </Button>
                 )}
               </div>

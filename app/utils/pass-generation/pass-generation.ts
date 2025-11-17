@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { google } from 'googleapis';
 import jwt from 'jsonwebtoken';
+import { mapCardTypeToStoreCardFields, type CardData } from '@/modules/pass-generation/card-type-mappers';
 
 
 const serviceAccount = {
@@ -61,8 +62,14 @@ function validateImageBuffer(buffer: Buffer, assetName: string): void {
     console.log(`Asset ${assetName}: Valid ${isPNG ? 'PNG' : 'JPEG'} image (${buffer.length} bytes)`);
 }
 
-export async function generatePass(userId: string, stampCount: number = 0) {
+export async function generatePass(
+    userId: string, 
+    stampCount: number = 0,
+    cardType: string = 'stamp',
+    cardData?: CardData
+) {
     console.log('Starting to initiate the pass creation');
+    console.log('Card type:', cardType);
 
     const certUrl = 'https://utfs.io/f/v9dcWxyyBXm21Gwze4c7l6M8cWvkzGsuYqT9a1SpxhnLOrB4';
     const wwdrUrl = 'https://utfs.io/f/v9dcWxyyBXm2uRC4Dg3rFvDKcpQeTOCk1SUmysgVLA7R8fME';
@@ -95,17 +102,17 @@ export async function generatePass(userId: string, stampCount: number = 0) {
         
         console.log('Certificates fetched and validated successfully.');
 
-        // Fetch all assets
+        // Fetch all assets - use template assets if provided, otherwise use defaults
         const assetUrls = {
-            artwork: 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
-            artwork2x: 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
-            artwork3x: 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
-            icon: 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
-            icon2x: 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
-            logo: 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
-            logo2x: 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
-            secondaryLogo: 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
-            secondaryLogo2x: 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71'
+            artwork: cardData?.strip || 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB',
+            artwork2x: cardData?.strip || 'https://utfs.io/f/v9dcWxyyBXm2jr5UzeK6f0hWPH4F3v2CNOSxudmYknel9a71',
+            artwork3x: cardData?.strip || 'https://utfs.io/f/v9dcWxyyBXm2WEfKMOUHGEVbuT0pxYkSf4FOdyotCqwhRjrz',
+            icon: cardData?.icon || 'https://utfs.io/f/v9dcWxyyBXm22t0LAEXSGFaOBg9vC4mypPQi2Mx7nDHeUKcw',
+            icon2x: cardData?.icon || 'https://utfs.io/f/v9dcWxyyBXm2asmT0F8U1F5xrmVC4fMZczRnpsYKdjgOoNiD',
+            logo: cardData?.logo || 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+            logo2x: cardData?.logo || 'https://utfs.io/f/v9dcWxyyBXm2u25tz3rFvDKcpQeTOCk1SUmysgVLA7R8fMEi',
+            secondaryLogo: cardData?.logo || 'https://utfs.io/f/v9dcWxyyBXm28cMspbD0FgCIaOWfxZRyNvXnHek9stU1rK3D',
+            secondaryLogo2x: cardData?.logo || 'https://utfs.io/f/v9dcWxyyBXm2CivrB7umyZWxon9IEVcb5etHSBpqaG8sjL71'
         };
 
         console.log('Fetching assets...');
@@ -186,9 +193,23 @@ export async function generatePass(userId: string, stampCount: number = 0) {
             secondaryLogo2xBuffer: secondaryLogo2xBuffer.length
         });
 
-        // Create minimal generic pass JSON matching old working version
-        // Using generic pass type (not storeCard) for maximum compatibility
-        // webServiceURL commented out for debugging - will add back later if needed
+        // Prepare card data with defaults for backward compatibility
+        const cardDataWithDefaults: CardData = {
+            stampCount,
+            stampThreshold: 10,
+            ...cardData
+        };
+
+        // Generate storeCard field structure based on card type
+        const storeCardFields = mapCardTypeToStoreCardFields(cardType, cardDataWithDefaults);
+
+        // Get base URL for web service
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}` 
+            : 'http://localhost:3000';
+
+        // Create storeCard pass JSON
+        // Using storeCard pass type for all card types
         const passJson: any = {
             formatVersion: 1,
             serialNumber: `COFFEE${userId}`,
@@ -197,48 +218,40 @@ export async function generatePass(userId: string, stampCount: number = 0) {
             // webServiceURL commented out for debugging - Apple Wallet may reject HTTP URLs
             // webServiceURL: `${baseUrl}/api/passes/v1`,
             // authenticationToken: process.env.PASS_AUTH_TOKEN || 'default-token-change-in-production',
-            description: 'Coffee Loyalty Card',
-            organizationName: 'Brew Rewards',
-            logoText: 'Brew Rewards',
-            backgroundColor: 'rgb(89, 52, 28)',
-            foregroundColor: 'rgb(255, 255, 255)',
-            // Using generic pass type (matching old working version)
-            generic: {
-                primaryFields: [
-                    {
-                        key: 'stamps',
-                        label: 'Stamps Collected',
-                        value: stampCount
-                    }
-                ],
-                secondaryFields: [
-                    {
-                        key: 'reward',
-                        label: 'Reward Progress',
-                        value: `${stampCount}/10`
-                    }
-                ]
+            description: cardData?.cardTitle || 'Loyalty Card',
+            organizationName: cardData?.businessName || 'Brew Rewards',
+            logoText: cardData?.businessName || 'Brew Rewards',
+            backgroundColor: cardData?.backgroundColor || 'rgb(89, 52, 28)',
+            foregroundColor: cardData?.textColor || 'rgb(255, 255, 255)',
+            labelColor: cardData?.textColor || 'rgb(255, 255, 255)',
+            // Using storeCard pass type
+            storeCard: {
+                headerFields: storeCardFields.headerFields,
+                primaryFields: storeCardFields.primaryFields,
+                secondaryFields: storeCardFields.secondaryFields || [],
+                auxiliaryFields: storeCardFields.auxiliaryFields || [],
+                backFields: storeCardFields.backFields || []
             },
             barcode: {
-                message: userId, // Using userId directly (matching old working version)
+                message: userId, // Using userId directly
                 format: 'PKBarcodeFormatQR',
                 messageEncoding: 'iso-8859-1'
             }
         };
 
-        // Validate pass.json structure for generic pass type
+        // Validate pass.json structure for storeCard pass type
         console.log('Validating pass.json structure...');
         if (!passJson.serialNumber || !passJson.passTypeIdentifier || !passJson.teamIdentifier) {
             throw new Error('Pass JSON missing required fields: serialNumber, passTypeIdentifier, or teamIdentifier');
         }
-        if (!passJson.generic) {
-            throw new Error('Pass JSON missing required generic structure');
+        if (!passJson.storeCard) {
+            throw new Error('Pass JSON missing required storeCard structure');
         }
         if (!passJson.barcode || !passJson.barcode.message || !passJson.barcode.format) {
             throw new Error('Pass JSON missing required barcode fields');
         }
         console.log('Pass.json structure validated successfully.');
-        console.log('Pass type: generic');
+        console.log('Pass type: storeCard');
         console.log('Pass serial number:', passJson.serialNumber);
         console.log('Pass type identifier:', passJson.passTypeIdentifier);
         console.log('Pass team identifier:', passJson.teamIdentifier);
@@ -249,21 +262,20 @@ export async function generatePass(userId: string, stampCount: number = 0) {
         const passJsonStr = JSON.stringify(passJson, null, 2);
         console.log('Pass.json content:', passJsonStr);
 
-        // Create a new PKPass instance with minimal assets (matching old working version)
-        // Old version only used logo.png and icon.png - using same approach for compatibility
+        // Create a new PKPass instance with all assets for storeCard
+        // Including strip images for visual appeal
         console.log('Creating PKPass instance...');
         const pass = new passkit.PKPass({
             "pass.json": Buffer.from(JSON.stringify(passJson)),
             "logo.png": logoBuffer,
-            "icon.png": iconBuffer
-            // Commenting out extra assets for now - matching old minimal structure
-            // "icon@2x.png": icon2xBuffer,
-            // "logo@2x.png": logo2xBuffer,
-            // "strip.png": artworkBuffer,
-            // "strip@2x.png": artwork2xBuffer,
-            // "strip@3x.png": artwork3xBuffer,
-            // "thumbnail.png": secondaryLogoBuffer,
-            // "thumbnail@2x.png": secondaryLogo2xBuffer,
+            "logo@2x.png": logo2xBuffer,
+            "icon.png": iconBuffer,
+            "icon@2x.png": icon2xBuffer,
+            "strip.png": artworkBuffer,
+            "strip@2x.png": artwork2xBuffer,
+            "strip@3x.png": artwork3xBuffer,
+            "thumbnail.png": secondaryLogoBuffer,
+            "thumbnail@2x.png": secondaryLogo2xBuffer,
         }, {
             wwdr: wwdrBuffer,
             signerCert: p12Buffer,
@@ -273,26 +285,33 @@ export async function generatePass(userId: string, stampCount: number = 0) {
 
         console.log("PKPass instance created successfully.");
 
-        // Note: barcode is already defined in pass.json, so we don't need to call setBarcodes()
-        // The old working version called setBarcodes(), but this causes a validation error
-        // when barcode is already in pass.json. Removing setBarcodes() call to avoid conflict.
+        // Set barcode using setBarcodes() method for proper visibility
+        // This ensures the QR code is properly rendered in Apple Wallet
+        console.log('Setting barcode...');
+        try {
+            pass.setBarcodes({
+                message: userId,
+                format: 'PKBarcodeFormatQR',
+                messageEncoding: 'iso-8859-1',
+                altText: 'Scan to redeem'
+            });
+            console.log('Barcode set successfully.');
+        } catch (error: any) {
+            // If barcode already exists in pass.json, that's fine - it will still work
+            console.warn('Warning: Error setting barcode (may already exist):', error.message);
+        }
         
         // Localize content (matching old working version) - this is optional
         console.log('Setting pass localization...');
         try {
             pass.localize("en", { 
-                description: 'Coffee Loyalty Card' 
+                description: cardData?.cardTitle || 'Loyalty Card' 
             });
             console.log('Pass localized successfully.');
         } catch (error: any) {
             // Log warning but don't fail - localization is optional
             console.warn('Warning: Error setting localization:', error.message);
         }
-        
-        // Barcode is already defined in pass.json, so we don't call setBarcodes()
-        // Calling setBarcodes() when barcode already exists in pass.json causes:
-        // ValidationError: "value" must be of type object
-        // This validation error can corrupt the pass structure
 
         // Generate the .pkpass file
         console.log('Generating pkpass buffer...');
@@ -402,7 +421,7 @@ class DemoLoyalty {
           return `${this.issuerId}.${this.classSuffix}`;
         }
 
-        async createObject(userId: string, stampCount: number = 0) {
+        async createObject(userId: string, stampCount: number = 0, cardType: string = 'stamp', cardData?: CardData) {
           let response;
 
           // Check if the object exists
@@ -421,16 +440,24 @@ class DemoLoyalty {
                 return `${this.issuerId}.${this.objectSuffix}`;
               }
           }
+
+          // Generate text modules based on card type
+          const textModules = this.generateTextModules(cardType, stampCount, cardData);
+          const businessName = cardData?.businessName || 'Brew Rewards';
+          
+          // Use template assets if provided, otherwise use defaults
+          const heroImageUrl = cardData?.strip || 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB';
+          const logoUrl = cardData?.logo || 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D';
     
            // See link below for more information on required properties
           // https://developers.google.com/wallet/retail/loyalty-cards/rest/v1/loyaltyobject
-          let newObject = {
+          let newObject: any = {
               'id': `${this.issuerId}.${this.objectSuffix}`,
               'classId': `${this.issuerId}.${this.classSuffix}`,
               'state': 'ACTIVE',
                'heroImage': {
                 'sourceUri': {
-                  'uri': 'https://utfs.io/f/v9dcWxyyBXm2A9lcoz1Xuv5igpZT8CKbmJAWOEj0MVtRL9FB'
+                  'uri': heroImageUrl
                 },
                 'contentDescription': {
                   'defaultValue': {
@@ -439,13 +466,7 @@ class DemoLoyalty {
                   }
                 }
               },
-              'textModulesData': [
-                {
-                  'header': 'Welcome to Brew Rewards!',
-                  'body': `You have ${stampCount} stamps! ${stampCount >= 10 ? 'You have a free coffe' : 'Keep collecting' }`,
-                  'id': 'TEXT_MODULE_ID'
-                }
-              ],
+              'textModulesData': textModules,
               'linksModuleData': {
                 'uris': [
                   {
@@ -464,12 +485,12 @@ class DemoLoyalty {
                 {
                   'mainImage': {
                     'sourceUri': {
-                      'uri': 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D'
+                      'uri': logoUrl
                     },
                     'contentDescription': {
                       'defaultValue': {
                         'language': 'en-US',
-                        'value': 'Coffee Logo'
+                        'value': `${businessName} Logo`
                       }
                     }
                   },
@@ -486,15 +507,35 @@ class DemoLoyalty {
                   'longitude': -122.3748889,
                 }
               ],
-              'accountId': 'TEST_ACCOUNT_ID',
-              'accountName': 'Test User',
-               'loyaltyPoints': {
-                'label': 'Stamps',
-                'balance': {
-                  'int': stampCount
-                }
+              'accountId': userId,
+              'accountName': cardData?.cardTitle || 'Member',
+          };
+
+          // Add card-type-specific fields
+          if (cardType === 'stamp' || cardType === 'multipass') {
+            newObject.loyaltyPoints = {
+              'label': cardType === 'multipass' ? 'Visits' : 'Stamps',
+              'balance': {
+                'int': stampCount
               }
             };
+          } else if (cardType === 'points' || cardType === 'reward') {
+            const pointsBalance = cardData?.pointsBalance || stampCount;
+            newObject.loyaltyPoints = {
+              'label': 'Points',
+              'balance': {
+                'int': pointsBalance
+              }
+            };
+          } else if (cardType === 'gift' || cardType === 'certificate') {
+            const balance = cardData?.balance || 0;
+            newObject.accountBalance = {
+              'label': 'Balance',
+              'balance': {
+                'micros': Math.round(balance * 1000000) // Convert to micros
+              }
+            };
+          }
     
             response = await this.client.loyaltyobject.insert({
               requestBody: newObject
@@ -504,6 +545,91 @@ class DemoLoyalty {
           console.log(response);
     
           return `${this.issuerId}.${this.objectSuffix}`;
+        }
+
+        generateTextModules(cardType: string, stampCount: number, cardData?: CardData): any[] {
+          const businessName = cardData?.businessName || 'Brew Rewards';
+          const modules: any[] = [];
+
+          switch (cardType) {
+            case 'stamp':
+              const threshold = cardData?.stampThreshold || 10;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `You have ${stampCount} stamps! ${stampCount >= threshold ? 'You have a free reward!' : `Keep collecting - ${threshold - stampCount} more to go!`}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'points':
+            case 'reward':
+              const pointsBalance = cardData?.pointsBalance || stampCount;
+              const nextThreshold = cardData?.nextRewardThreshold || 100;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `You have ${pointsBalance} points! ${pointsBalance >= nextThreshold ? 'Reward available!' : `${nextThreshold - pointsBalance} more points needed.`}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'discount':
+              const discountPercentage = cardData?.discountPercentage || 0;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `Your current discount: ${discountPercentage}%`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'cashback':
+            case 'cash_back':
+              const cashbackPercentage = cardData?.cashbackPercentage || 0;
+              const cashbackEarned = cardData?.cashbackEarned || 0;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `Cashback: ${cashbackPercentage}% | Earned: £${cashbackEarned.toFixed(2)}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'membership':
+              const expirationDate = cardData?.expirationDate || 'N/A';
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `Valid until: ${expirationDate}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'coupon':
+              const offerDescription = cardData?.offerDescription || 'Special Offer';
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': offerDescription,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'gift':
+            case 'certificate':
+              const balance = cardData?.balance || 0;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `Gift Card Balance: £${balance}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            case 'multipass':
+              const visitsLeft = stampCount;
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `Visits remaining: ${visitsLeft}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+              break;
+            default:
+              modules.push({
+                'header': `Welcome to ${businessName}!`,
+                'body': `You have ${stampCount} stamps! ${stampCount >= 10 ? 'You have a free reward!' : 'Keep collecting!'}`,
+                'id': 'TEXT_MODULE_MAIN'
+              });
+          }
+
+          return modules;
         }
 
        /**
@@ -520,14 +646,17 @@ class DemoLoyalty {
        *
        * @returns {string} An "Add to Google Wallet" link.
        */
-      createJwtNewObjects(userId: string, stampCount: number = 0) {
+      createJwtNewObjects(userId: string, stampCount: number = 0, cardType: string = 'stamp', cardData?: CardData) {
+        const businessName = cardData?.businessName || 'Brew Rewards';
+        const textModules = this.generateTextModules(cardType, stampCount, cardData);
+
         // See link below for more information on required properties
         // https://developers.google.com/wallet/retail/loyalty-cards/rest/v1/loyaltyclass
         let newClass = {
           'id': `${this.issuerId}.${this.classSuffix}`,
-          'issuerName': 'Brew Rewards',
+          'issuerName': businessName,
           'reviewStatus': 'UNDER_REVIEW',
-          'programName': 'Brew Rewards Program',
+          'programName': `${businessName} Program`,
           'programLogo': {
             'sourceUri': {
                 'uri': 'https://utfs.io/f/v9dcWxyyBXm28BhSeXD0FgCIaOWfxZRyNvXnHek9stU1rK3D'
@@ -535,7 +664,7 @@ class DemoLoyalty {
             'contentDescription': {
               'defaultValue': {
                 'language': 'en-US',
-                'value': 'Brew Rewards Logo'
+                'value': `${businessName} Logo`
               }
             }
           }
@@ -543,7 +672,7 @@ class DemoLoyalty {
     
         // See link below for more information on required properties
         // https://developers.google.com/wallet/retail/loyalty-cards/rest/v1/loyaltyobject
-        let newObject = {
+        let newObject: any = {
             'id': `${this.issuerId}.${this.objectSuffix}`,
             'classId': `${this.issuerId}.${this.classSuffix}`,
             'state': 'ACTIVE',
@@ -558,13 +687,7 @@ class DemoLoyalty {
                   }
                 }
               },
-              'textModulesData': [
-                {
-                  'header': 'Welcome to Brew Rewards!',
-                  'body': `You have ${stampCount} stamps! ${stampCount >= 10 ? 'You have a free coffe' : 'Keep collecting' }`,
-                  'id': 'TEXT_MODULE_ID'
-                }
-              ],
+              'textModulesData': textModules,
               'linksModuleData': {
                 'uris': [
                   {
@@ -588,7 +711,7 @@ class DemoLoyalty {
                     'contentDescription': {
                       'defaultValue': {
                         'language': 'en-US',
-                        'value': 'Coffee Logo'
+                        'value': `${businessName} Logo`
                       }
                     }
                   },
@@ -605,15 +728,35 @@ class DemoLoyalty {
                   'longitude': -122.3748889,
                 }
               ],
-              'accountId': 'TEST_ACCOUNT_ID',
-              'accountName': 'Test User',
-               'loyaltyPoints': {
-                'label': 'Stamps',
-                'balance': {
-                  'int': stampCount
-                }
-              }
-            };
+              'accountId': userId,
+              'accountName': cardData?.cardTitle || 'Member',
+        };
+
+        // Add card-type-specific fields
+        if (cardType === 'stamp' || cardType === 'multipass') {
+          newObject.loyaltyPoints = {
+            'label': cardType === 'multipass' ? 'Visits' : 'Stamps',
+            'balance': {
+              'int': stampCount
+            }
+          };
+        } else if (cardType === 'points' || cardType === 'reward') {
+          const pointsBalance = cardData?.pointsBalance || stampCount;
+          newObject.loyaltyPoints = {
+            'label': 'Points',
+            'balance': {
+              'int': pointsBalance
+            }
+          };
+        } else if (cardType === 'gift' || cardType === 'certificate') {
+          const balance = cardData?.balance || 0;
+          newObject.accountBalance = {
+            'label': 'Balance',
+            'balance': {
+              'micros': Math.round(balance * 1000000) // Convert to micros
+            }
+          };
+        }
         
         // Create the JWT claims
         let claims = {
@@ -639,18 +782,23 @@ class DemoLoyalty {
 }
 
 // Google Pass function
-export async function generateGooglePass(userId: string, stampCount: number = 0) {
+export async function generateGooglePass(
+    userId: string, 
+    stampCount: number = 0,
+    cardType: string = 'stamp',
+    cardData?: CardData
+) {
     try {
         const demo = new DemoLoyalty();
         await demo.createClass();
-         await demo.createObject(userId,stampCount);
-        const jwtLink = demo.createJwtNewObjects(userId,stampCount);
+        await demo.createObject(userId, stampCount, cardType, cardData);
+        const jwtLink = demo.createJwtNewObjects(userId, stampCount, cardType, cardData);
 
         const buffer = Buffer.from(jwtLink, 'utf-8');
         console.log('Google pass generated as buffer:', buffer.length);
         return buffer;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating Google Wallet pass:', error);
         throw new Error(`Google Wallet pass generation failed: ${error.message}`);
     }

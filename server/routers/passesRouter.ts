@@ -102,11 +102,20 @@ export const passesRouter = router({
   generateTestPass: adminProcedure
     .input(
       z.object({
-        cardType: z.enum(["stamp", "points", "discount"]),
+        cardType: z.enum(["stamp", "points", "discount", "cashback", "multipass", "coupon", "reward", "membership", "gift"]),
         stampCount: z.number().min(2).max(50).optional(),
         initialStamps: z.number().min(0).optional(),
         pointsRate: z.number().min(1).max(10).optional(),
+        pointsBalance: z.number().min(0).optional(),
         discountTiers: z.array(z.number()).optional(),
+        discountPercentage: z.number().min(0).max(100).optional(),
+        cashbackPercentage: z.number().min(0).max(100).optional(),
+        cashbackEarned: z.number().min(0).optional(),
+        balance: z.number().min(0).optional(),
+        visits: z.number().min(0).optional(),
+        classesPerMonth: z.number().min(0).optional(),
+        expirationDate: z.string().optional(),
+        offerDescription: z.string().optional(),
         backgroundColor: z.string(),
         textColor: z.string(),
         accentColor: z.string(),
@@ -180,6 +189,25 @@ export const passesRouter = router({
         const userId = userResult[0].id;
         const serialNumber = `COFFEE${userId}`;
 
+        // Prepare card data based on card type
+        const cardData = {
+          cardTitle: input.cardTitle,
+          businessName: input.businessName,
+          description: input.description,
+          stampCount: input.initialStamps || 0,
+          stampThreshold: input.stampCount || 10,
+          pointsBalance: input.pointsBalance || input.initialStamps || 0,
+          pointsRate: input.pointsRate || 1,
+          discountPercentage: input.discountPercentage || 0,
+          cashbackPercentage: input.cashbackPercentage || 0,
+          cashbackEarned: input.cashbackEarned || 0,
+          balance: input.balance || 0,
+          visits: input.visits || 0,
+          classesPerMonth: input.classesPerMonth || 0,
+          expirationDate: input.expirationDate || input.endDate,
+          offerDescription: input.offerDescription,
+        };
+
         // Create userPass record (same as Registration route)
         const [userPass] = await db.insert(userPasses).values({
           userId: userId,
@@ -192,6 +220,7 @@ export const passesRouter = router({
             cardType: input.cardType,
             cardTitle: input.cardTitle,
             businessName: input.businessName,
+            ...cardData,
           },
         }).returning();
 
@@ -199,7 +228,13 @@ export const passesRouter = router({
         
         if (detectedPlatform === 'ios') {
           // Use the same generatePass function as Registration route
-          passBuffer = await generatePass(userId, input.initialStamps || 0);
+          // Pass card type and card data for storeCard generation
+          passBuffer = await generatePass(
+            userId, 
+            input.initialStamps || 0,
+            input.cardType,
+            cardData
+          );
 
           // Validate buffer - ensure it's a Buffer instance
           if (!passBuffer || !Buffer.isBuffer(passBuffer)) {
@@ -236,7 +271,13 @@ export const passesRouter = router({
             mimeType: "application/vnd.apple.pkpass"
           };
         } else if (detectedPlatform === 'android') {
-          passBuffer = await generateGooglePass(userId, input.initialStamps || 0);
+          // Pass card type and card data for Google Wallet generation
+          passBuffer = await generateGooglePass(
+            userId, 
+            input.initialStamps || 0,
+            input.cardType,
+            cardData
+          );
           return {
             buffer: passBuffer.toString('utf-8'), // For Google Pass URL
           };

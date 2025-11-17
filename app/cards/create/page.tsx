@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Stamp, Coins, Percent } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
+import { Stamp, Coins, Percent, Apple, Smartphone } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { getCardTemplate } from "@/modules/pass-generation/card-templates";
 
 type CardType = 'stamp' | 'points' | 'discount';
@@ -21,6 +24,7 @@ export default function CreateCardPage() {
   
   // If template is selected, start at step 2 (skip card type selection)
   const [currentStep, setCurrentStep] = useState(templateId ? 2 : 1);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
   const [formData, setFormData] = useState({
@@ -45,7 +49,12 @@ export default function CreateCardPage() {
     rewardDetails: {} as Record<string, any>,
     terms: '',
     
-    // Step 5: Activation
+    // Step 5: Platform Selection
+    platformAppleWallet: true,
+    platformGoogleWallet: true,
+    platformPWA: false,
+    
+    // Step 6: Activation
     active: false,
   });
 
@@ -74,8 +83,37 @@ export default function CreateCardPage() {
   }, [templateId]);
 
   const createCard = trpc.cards.create.useMutation({
-    onSuccess: (data) => {
-      router.push(`/cards/${data.card.id}`);
+    onSuccess: async (data) => {
+      // Generate PDF after card creation
+      // Use card ID for registration link (unique to this card)
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      const registrationLink = `${baseUrl}/register/${data.card.id}`;
+
+      try {
+        setIsGeneratingPDF(true);
+        // Use client-side PDF generation
+        const { generateCardPDFWithJSPDF } = await import('@/app/utils/pdf-generator-client');
+        await generateCardPDFWithJSPDF({
+          cardId: data.card.id,
+          cardTitle: formData.name,
+          businessName: formData.businessName,
+          cardType: formData.type || 'stamp',
+          backgroundColor: formData.backgroundColor,
+          textColor: formData.textColor,
+          description: formData.description,
+          registrationLink,
+          stampCount: (formData.rewardDetails as any)?.stampCount || 10,
+        });
+
+        // Navigate to card detail page
+        router.push(`/cards/${data.card.id}`);
+      } catch (error: any) {
+        console.error('Error generating PDF:', error);
+        // Still navigate even if PDF generation fails
+        router.push(`/cards/${data.card.id}`);
+      } finally {
+        setIsGeneratingPDF(false);
+      }
     },
     onError: (error) => {
       alert(`Error: ${error.message}`);
@@ -83,9 +121,9 @@ export default function CreateCardPage() {
   });
 
   const handleNext = () => {
-    // When template is selected, we still have 4 steps (2, 3, 4, 5)
-    // When no template, we have 5 steps (1, 2, 3, 4, 5)
-    const maxStep = 5;
+    // When template is selected, we have 5 steps (2, 3, 4, 5, 6)
+    // When no template, we have 6 steps (1, 2, 3, 4, 5, 6)
+    const maxStep = templateId ? 6 : 6;
     if (currentStep < maxStep) {
       setCurrentStep(currentStep + 1);
     }
@@ -106,7 +144,15 @@ export default function CreateCardPage() {
       return;
     }
 
-    createCard.mutate(formData as any);
+    // Map formData to match the schema
+    createCard.mutate({
+      ...formData,
+      type: 'loyalty', // Apple Wallet pass type - always 'loyalty' for storeCard
+      cardType: formData.type, // Business card type
+      platformAppleWallet: formData.platformAppleWallet,
+      platformGoogleWallet: formData.platformGoogleWallet,
+      platformPWA: formData.platformPWA,
+    } as any);
   };
 
   return (
@@ -120,13 +166,14 @@ export default function CreateCardPage() {
                 Using template: <strong>{selectedTemplate.name}</strong> ({selectedTemplate.cardType})
               </div>
             )}
-            Step {templateId ? currentStep - 1 : currentStep} of {templateId ? 4 : 5}: {
+            Step {templateId ? currentStep - 1 : currentStep} of {templateId ? 5 : 6}: {
               currentStep === 1 && 'Select Card Type'
             }
             {currentStep === 2 && 'Configure Settings'}
             {currentStep === 3 && 'Customize Design'}
             {currentStep === 4 && 'Add Information'}
-            {currentStep === 5 && 'Save & Preview'}
+            {currentStep === 5 && 'Platform Selection'}
+            {currentStep === 6 && 'Save & Generate PDF'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -383,8 +430,83 @@ export default function CreateCardPage() {
             </div>
           )}
 
-          {/* Step 5: Save & Preview */}
+          {/* Step 5: Platform Selection */}
           {currentStep === 5 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold">Platform Support</h3>
+              <p className="text-sm text-muted-foreground">
+                Select which platforms customers can use to add this card
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Apple className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <Label htmlFor="platformAppleWallet" className="font-medium cursor-pointer">
+                        Apple Wallet (iOS)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        For iPhone and iPad users
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="platformAppleWallet"
+                    checked={formData.platformAppleWallet}
+                    onChange={(e) => setFormData({ ...formData, platformAppleWallet: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <Label htmlFor="platformGoogleWallet" className="font-medium cursor-pointer">
+                        Google Wallet (Android)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        For Android phone users
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="platformGoogleWallet"
+                    checked={formData.platformGoogleWallet}
+                    onChange={(e) => setFormData({ ...formData, platformGoogleWallet: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <Label htmlFor="platformPWA" className="font-medium cursor-pointer">
+                        PWA (Web App)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Fallback for devices without wallet apps
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="platformPWA"
+                    checked={formData.platformPWA}
+                    onChange={(e) => setFormData({ ...formData, platformPWA: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Save & Preview */}
+          {currentStep === 6 && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold">Review & Activate</h3>
               
@@ -407,6 +529,87 @@ export default function CreateCardPage() {
                   <Label htmlFor="active">Activate card immediately</Label>
                 </div>
               </div>
+
+              {/* PDF Preview */}
+              <div className="mt-6">
+                <h3 className="font-semibold mb-4">PDF Preview</h3>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                  <div 
+                    className="mx-auto max-w-md rounded-lg shadow-lg overflow-hidden"
+                    style={{
+                      backgroundColor: formData.backgroundColor,
+                      color: formData.textColor,
+                    }}
+                  >
+                    {/* PDF Header */}
+                    <div className="p-6 text-center">
+                      <h2 className="text-xl font-bold mb-2" style={{ color: formData.textColor }}>
+                        {formData.businessName}
+                      </h2>
+                      <p className="text-sm opacity-90" style={{ color: formData.textColor }}>
+                        {formData.name}
+                      </p>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="px-6 pb-4 space-y-2 text-sm" style={{ color: formData.textColor }}>
+                      <p className="font-semibold text-base">
+                        {formData.type === 'stamp' 
+                          ? 'Collect stamps to get a reward'
+                          : formData.type === 'points'
+                          ? 'Collect points to get a reward'
+                          : formData.type === 'discount'
+                          ? 'Get progressive discounts'
+                          : 'Join our loyalty program'}
+                      </p>
+                      <p>Scan QR code by your phone camera</p>
+                      <p>and install digital card in Apple Wallet</p>
+                      <p>on Phone or Google Pay on Android</p>
+                      <p className="pt-2">Get your reward after</p>
+                      <p>
+                        {formData.type === 'stamp'
+                          ? `receiving ${(formData.rewardDetails as any)?.stampCount || 10} stamps`
+                          : formData.type === 'points'
+                          ? 'collecting enough points'
+                          : formData.type === 'discount'
+                          ? 'making more visits'
+                          : 'joining our program'}
+                      </p>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="px-6 pb-4 flex flex-col items-center">
+                      <div className="bg-white p-3 rounded">
+                        {(() => {
+                          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+                          const previewLink = `${baseUrl}/register/preview-card`;
+                          return (
+                            <QRCodeSVG 
+                              value={previewLink} 
+                              size={120}
+                              bgColor="#000000"
+                              fgColor="#FFFFFF"
+                            />
+                          );
+                        })()}
+                      </div>
+                      <p className="text-xs mt-3 opacity-80 break-all px-2 text-center" style={{ color: formData.textColor }}>
+                        {(() => {
+                          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+                          return `${baseUrl}/register/preview-card`;
+                        })()}
+                      </p>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-6 pb-4 text-center">
+                      <p className="text-xs opacity-70" style={{ color: formData.textColor }}>
+                        {formData.businessName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -421,7 +624,7 @@ export default function CreateCardPage() {
               {templateId && currentStep === 2 ? 'Back to Templates' : 'Back'}
             </Button>
             
-            {currentStep < 5 ? (
+            {currentStep < 6 ? (
               <Button
                 type="button"
                 onClick={handleNext}
@@ -436,9 +639,16 @@ export default function CreateCardPage() {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={createCard.isLoading}
+                disabled={createCard.isLoading || isGeneratingPDF}
               >
-                {createCard.isLoading ? 'Creating...' : 'Create Card'}
+                {createCard.isLoading || isGeneratingPDF ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generating PDF...</span>
+                  </div>
+                ) : (
+                  'Create Card & Generate PDF'
+                )}
               </Button>
             )}
           </div>
