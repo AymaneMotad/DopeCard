@@ -10,7 +10,7 @@ import { db } from '@/db/drizzle';
 import { userPasses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generatePass } from '@/app/utils/pass-generation/pass-generation';
-import { verifyAuthToken } from '../../middleware';
+import { verifyAuthToken } from '../../../middleware';
 
 export async function GET(
   req: NextRequest,

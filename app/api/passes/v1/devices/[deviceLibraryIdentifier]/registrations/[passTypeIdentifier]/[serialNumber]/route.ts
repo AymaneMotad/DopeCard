@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db/drizzle';
 import { passRegistrations, userPasses } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifyAuthToken } from '../../middleware';
+import { verifyAuthToken } from '../../../../middleware';
 
 export async function POST(
   req: NextRequest,
