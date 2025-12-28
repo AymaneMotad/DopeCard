@@ -47,7 +47,7 @@
     "jspdf": "^3.0.3",
     "lucide-react": "^0.451.0",
     "mysql2": "^3.11.4",
-    "next": "14.2.15",
+    "next": "14.2.35",
     "next-auth": "^4.24.11",
     "next-i18next": "^15.4.0",
     "passkit-generator": "^3.2.0",
