@@ -30,8 +30,9 @@ export const PLATFORMS = {
 export const USER_ROLES = {
   ADMIN: 'admin',
   COMMERCIAL: 'commercial',
-  CLIENT: 'client',
+  BUSINESS: 'business',
   MANAGER: 'manager',
+  CUSTOMER: 'customer',
 } as const;
 
 export const PASS_STATUS = {

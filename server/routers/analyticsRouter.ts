@@ -7,24 +7,17 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { db } from "@/db/drizzle";
-import { users, userPasses, passTemplates, passUpdates, client } from "@/db/schema";
+import { users, userPasses, passTemplates, passUpdates } from "@/db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 
 export const analyticsRouter = router({
   // Get overview metrics
   getOverview: protectedProcedure.query(async ({ ctx }) => {
-    // Get client for this user
-    const userClient = await db.query.client.findFirst({
-      where: eq(client.userId, ctx.user.id),
-    });
-
-    const clientId = userClient?.id || ctx.user.id;
-
     // Total active customers
     const totalCustomers = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(eq(users.role, 'client'));
+      .where(eq(users.role, 'customer'));
 
     // Cards issued this month
     const thisMonth = new Date();
@@ -62,7 +55,7 @@ export const analyticsRouter = router({
   // Get customer statistics
   getCustomerStats: protectedProcedure.query(async () => {
     const customers = await db.query.users.findMany({
-      where: eq(users.role, 'client'),
+      where: eq(users.role, 'customer'),
     });
 
     const passes = await db.query.userPasses.findMany();

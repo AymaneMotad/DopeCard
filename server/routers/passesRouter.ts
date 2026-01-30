@@ -179,15 +179,27 @@ export const passesRouter = router({
         // Generate unique phone number using timestamp and UUID
         const testPhone = `+1${Date.now().toString().slice(-10)}${uniqueId.slice(0, 2)}`;
 
+        console.log('═════════════════════════════════════════════════════');
+        console.log('🧪 TEST PASS GENERATION');
+        console.log('═════════════════════════════════════════════════════');
+        console.log('📝 Creating test user...');
+        
         const userResult = await db.insert(users).values({
           username: testUsername,
           email: testEmail,
           phoneNumber: testPhone,
-          role: 'client',
+          role: 'customer',
         }).returning();
 
         const userId = userResult[0].id;
         const serialNumber = `COFFEE${userId}`;
+        
+        console.log('✅ Test user created');
+        console.log('   User ID:', userId);
+        console.log('   Username:', testUsername);
+        console.log('   Email:', testEmail);
+        console.log('   Phone:', testPhone);
+        console.log('   Serial Number:', serialNumber);
 
         // Default assets from templates (using the URLs already in the project)
         const DEFAULT_ASSETS = {
@@ -233,6 +245,7 @@ export const passesRouter = router({
         };
 
         // Create userPass record (same as Registration route)
+        console.log('📝 Creating pass record in database...');
         const [userPass] = await db.insert(userPasses).values({
           userId: userId,
           templateId: null,
@@ -247,6 +260,15 @@ export const passesRouter = router({
             ...cardData,
           },
         }).returning();
+        
+        console.log('✅ Pass record created in database');
+        console.log('   Pass ID:', userPass.id);
+        console.log('   Serial Number:', userPass.serialNumber);
+        console.log('   User ID:', userPass.userId);
+        console.log('   Status:', userPass.status);
+        console.log('   Card Type:', input.cardType);
+        console.log('   Initial Stamps:', input.initialStamps || 0);
+        console.log('═════════════════════════════════════════════════════');
 
         let passBuffer;
         
@@ -288,11 +310,29 @@ export const passesRouter = router({
             throw new Error('Base64 conversion failed');
           }
 
-          console.log('Test pass generated successfully. Buffer size:', passBuffer.length, 'Base64 length:', base64Pass.length);
+          console.log('═════════════════════════════════════════════════════');
+          console.log('✅ TEST PASS GENERATED SUCCESSFULLY');
+          console.log('═════════════════════════════════════════════════════');
+          console.log('📊 Buffer size:', passBuffer.length, 'bytes');
+          console.log('📊 Base64 length:', base64Pass.length, 'characters');
+          console.log('🎫 Serial Number:', serialNumber);
+          console.log('👤 User ID:', userId);
+          console.log('📱 Platform:', detectedPlatform);
+          console.log('═════════════════════════════════════════════════════');
+          console.log('💡 NEXT STEPS:');
+          console.log('1. Download the .pkpass file');
+          console.log('2. Add to Apple Wallet');
+          console.log('3. Apple Wallet will send registration request to:');
+          console.log(`   POST ${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/api/passes/v1/devices/{deviceId}/registrations/pass.com.dopecard.passmaker/${serialNumber}`);
+          console.log('4. Check server logs for registration success');
+          console.log('5. Open scanner and search for user to see device count');
+          console.log('═════════════════════════════════════════════════════');
 
           return {
             buffer: base64Pass,
-            mimeType: "application/vnd.apple.pkpass"
+            mimeType: "application/vnd.apple.pkpass",
+            userId: userId, // Include for debugging
+            serialNumber: serialNumber, // Include for debugging
           };
         } else if (detectedPlatform === 'android') {
           // Pass card type and card data for Google Wallet generation

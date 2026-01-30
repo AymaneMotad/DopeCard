@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 // Enhanced Enums
-export const roleEnum = pgEnum('role', ['admin', 'commercial', 'client', 'manager']);
+export const roleEnum = pgEnum('role', ['admin', 'commercial', 'business', 'manager', 'customer']);
 export const platformEnum = pgEnum('platform', ['ios', 'android']);
 export const passTypeEnum = pgEnum('pass_type', ['loyalty', 'coupon', 'eventTicket', 'boardingPass', 'generic']);
 export const subscriptionPackEnum = pgEnum('subscription_pack', ['basic', 'premium', 'enterprise']);
@@ -40,7 +40,7 @@ export const customer: PgTableWithColumns<any> = pgTable("customer", {
   username: text("username").notNull().unique(),
   referralCode: text("referral_code").unique(),
   referredBy: uuid("referred_by").references(() => customer.id),
-  clientId: uuid("client_id").references(() => client.id),
+  businessId: uuid("business_id").references(() => business.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -58,8 +58,8 @@ export const commercialAgent = pgTable("commercial_agents", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Enhanced Clients table
-export const client = pgTable("clients", {
+// Enhanced Businesses table
+export const business = pgTable("businesses", {
   id: uuid().primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id),
   commercialAgentId: uuid("commercial_agent_id").references(() => commercialAgent.id),
@@ -73,20 +73,20 @@ export const client = pgTable("clients", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Managers table (for client staff)
+// Managers table (for business staff)
 export const managers = pgTable("managers", {
   id: uuid().primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id),
-  clientId: uuid("client_id").notNull().references(() => client.id),
+  businessId: uuid("business_id").notNull().references(() => business.id),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Pass Templates (Different types of passes for each client)
+// Pass Templates (Different types of passes for each business)
 export const passTemplates = pgTable("pass_templates", {
   id: uuid().primaryKey().defaultRandom(),
-  clientId: uuid("client_id").notNull().references(() => client.id),
+  businessId: uuid("business_id").notNull().references(() => business.id),
   name: text("name").notNull(),
   type: passTypeEnum("type").notNull(),
   cardType: text("card_type"), // 'stamp', 'points', 'discount', 'cashback', 'multipass', 'coupon', 'reward', 'membership', 'gift'

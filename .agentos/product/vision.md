@@ -88,6 +88,6 @@ Create a user-friendly SaaS platform that allows businesses to digitize their cu
 
 ## Reference Documents
 
-- **Full PRD**: See `/PRD.md` for complete product requirements
+- **Project Overview**: See `/PROJECT_OVERVIEW.md` for current product scope
 - **Technical Architecture**: See specs layer for implementation details
 

@@ -8,7 +8,7 @@ import { router, protectedProcedure, adminProcedure, publicProcedure } from "../
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { db } from "@/db/drizzle";
-import { passTemplates, client } from "@/db/schema";
+import { passTemplates, business } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 // Card creation input schema
@@ -60,21 +60,21 @@ export const cardsRouter = router({
   create: protectedProcedure
     .input(cardCreationSchema)
     .mutation(async ({ input, ctx }) => {
-      // Get client ID from user session
-      // For now, we'll need to get it from the user's client relationship
-      // This assumes the user is a client or admin
+      // Get business ID from user session
+      // For now, we'll need to get it from the user's business relationship
+      // This assumes the user is a business or admin
       
       try {
-        // Find client for this user (if user is a client)
-        let userClient = await db.query.client.findFirst({
-          where: eq(client.userId, ctx.user.id),
+        // Find business for this user (if user is a business)
+        let userBusiness = await db.query.business.findFirst({
+          where: eq(business.userId, ctx.user.id),
         });
 
-        // For admin users creating test cards, create a default test client if none exists
-        if (!userClient && ctx.user.role === 'admin') {
+        // For admin users creating test cards, create a default test business if none exists
+        if (!userBusiness && ctx.user.role === 'admin') {
           try {
-            // Create a default test client for the admin
-            const [newClient] = await db.insert(client).values({
+            // Create a default test business for the admin
+            const [newBusiness] = await db.insert(business).values({
               userId: ctx.user.id,
               businessName: input.businessName || 'Test Business',
               businessType: 'test',
@@ -82,40 +82,40 @@ export const cardsRouter = router({
               maxManagers: 1,
               active: true,
             }).returning();
-            userClient = newClient;
+            userBusiness = newBusiness;
           } catch (error: any) {
-            // If client creation fails (e.g., duplicate), try to find existing client
+            // If business creation fails (e.g., duplicate), try to find existing business
             if (error?.code === '23505' || error?.message?.includes('unique')) {
-              userClient = await db.query.client.findFirst({
-                where: eq(client.userId, ctx.user.id),
+              userBusiness = await db.query.business.findFirst({
+                where: eq(business.userId, ctx.user.id),
               });
             }
-            // If still no client found, rethrow the error
-            if (!userClient) {
+            // If still no business found, rethrow the error
+            if (!userBusiness) {
               throw error;
             }
           }
         }
 
-        if (!userClient && ctx.user.role !== 'admin') {
+        if (!userBusiness && ctx.user.role !== 'admin') {
           throw new TRPCError({
             code: 'FORBIDDEN',
-            message: 'Only clients or admins can create cards',
+            message: 'Only businesses or admins can create cards',
           });
         }
 
-        if (!userClient) {
+        if (!userBusiness) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to create or find client for card creation',
+            message: 'Failed to create or find business for card creation',
           });
         }
 
-        const clientId = userClient.id;
+        const businessId = userBusiness.id;
 
         // Create card template
         const [cardTemplate] = await db.insert(passTemplates).values({
-          clientId: clientId,
+          businessId: businessId,
           name: input.name,
           type: input.type,
           cardType: input.cardType, // Store card type
@@ -162,31 +162,31 @@ export const cardsRouter = router({
       }
     }),
 
-  // Get all cards for a client
+  // Get all cards for a business
   getAll: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        // Get client for this user
-        const userClient = await db.query.client.findFirst({
-          where: eq(client.userId, ctx.user.id),
+        // Get business for this user
+        const userBusiness = await db.query.business.findFirst({
+          where: eq(business.userId, ctx.user.id),
         });
 
-        // For admin users, get all cards (or cards without clientId filter)
+        // For admin users, get all cards (or cards without businessId filter)
         if (ctx.user.role === 'admin') {
           return await db.query.passTemplates.findMany({
             orderBy: (templates, { desc }) => [desc(templates.createdAt)],
           });
         }
 
-        // For non-admin users, they need a client record
-        if (!userClient) {
+        // For non-admin users, they need a business record
+        if (!userBusiness) {
           return [];
         }
 
-        const clientId = userClient.id;
+        const businessId = userBusiness.id;
 
         const templates = await db.query.passTemplates.findMany({
-          where: eq(passTemplates.clientId, clientId),
+          where: eq(passTemplates.businessId, businessId),
           orderBy: (templates, { desc }) => [desc(templates.createdAt)],
         });
 
@@ -227,7 +227,7 @@ export const cardsRouter = router({
       return card;
     }),
 
-  // Get card by ID (protected - for admin/client access)
+  // Get card by ID (protected - for admin/business access)
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
@@ -243,11 +243,11 @@ export const cardsRouter = router({
       }
 
       // Check permissions
-      const userClient = await db.query.client.findFirst({
-        where: eq(client.userId, ctx.user.id),
+      const userBusiness = await db.query.business.findFirst({
+        where: eq(business.userId, ctx.user.id),
       });
 
-      if (card.clientId !== userClient?.id && ctx.user.role !== 'admin') {
+      if (card.businessId !== userBusiness?.id && ctx.user.role !== 'admin') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have access to this card',
@@ -278,11 +278,11 @@ export const cardsRouter = router({
       }
 
       // Check permissions
-      const userClient = await db.query.client.findFirst({
-        where: eq(client.userId, ctx.user.id),
+      const userBusiness = await db.query.business.findFirst({
+        where: eq(business.userId, ctx.user.id),
       });
 
-      if (card.clientId !== userClient?.id && ctx.user.role !== 'admin') {
+      if (card.businessId !== userBusiness?.id && ctx.user.role !== 'admin') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have access to this card',
@@ -340,11 +340,11 @@ export const cardsRouter = router({
       }
 
       // Check permissions
-      const userClient = await db.query.client.findFirst({
-        where: eq(client.userId, ctx.user.id),
+      const userBusiness = await db.query.business.findFirst({
+        where: eq(business.userId, ctx.user.id),
       });
 
-      if (card.clientId !== userClient?.id && ctx.user.role !== 'admin') {
+      if (card.businessId !== userBusiness?.id && ctx.user.role !== 'admin') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have access to this card',
@@ -373,11 +373,11 @@ export const cardsRouter = router({
       }
 
       // Check permissions
-      const userClient = await db.query.client.findFirst({
-        where: eq(client.userId, ctx.user.id),
+      const userBusiness = await db.query.business.findFirst({
+        where: eq(business.userId, ctx.user.id),
       });
 
-      if (card.clientId !== userClient?.id && ctx.user.role !== 'admin') {
+      if (card.businessId !== userBusiness?.id && ctx.user.role !== 'admin') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have access to this card',

@@ -23,8 +23,9 @@ The authentication system handles user login, session management, and role-based
 
 - `admin` - Full system access
 - `commercial` - Commercial agent access
-- `client` - Business owner access
+- `business` - Business owner access
 - `manager` - Staff/manager access
+- `customer` - End customer access
 
 ## Authentication Flow
 

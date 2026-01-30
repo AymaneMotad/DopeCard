@@ -1,8 +1,8 @@
-// Admin router for managing users, clients, managers, etc.
+// Admin router for managing users, businesses, managers, etc.
 import { adminProcedure, router } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { users, client, commercialAgent, managers } from "@/db/schema";
+import { users, business, commercialAgent, managers } from "@/db/schema";
 import { db } from "@/db/drizzle";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -16,7 +16,7 @@ const baseUserSchema = z.object({
 });
 
 // Role-specific schemas
-const clientSchema = z.object({
+const businessSchema = z.object({
   businessName: z.string(),
   businessType: z.string(),
   subscriptionPack: z.enum(["basic", "premium", "enterprise"]),
@@ -29,7 +29,7 @@ const commercialSchema = z.object({
 });
 
 const managerSchema = z.object({
-  clientId: z.string().uuid(),
+  businessId: z.string().uuid(),
 });
 
 // Combined input schema
@@ -39,9 +39,9 @@ const createUserSchema = z.discriminatedUnion("role", [
     ...baseUserSchema.shape,
   }),
   z.object({
-    role: z.literal("client"),
+    role: z.literal("business"),
     ...baseUserSchema.shape,
-    ...clientSchema.shape,
+    ...businessSchema.shape,
   }),
   z.object({
     role: z.literal("commercial"),
@@ -79,8 +79,8 @@ export const adminRouter = router({
 
           // Create role-specific record
           switch (input.role) {
-            case 'client':
-              await tx.insert(client).values({
+            case 'business':
+              await tx.insert(business).values({
                 userId: newUser.id,
                 businessName: input.businessName,
                 businessType: input.businessType,
@@ -101,7 +101,7 @@ export const adminRouter = router({
             case 'manager':
               await tx.insert(managers).values({
                 userId: newUser.id,
-                clientId: input.clientId,
+                businessId: input.businessId,
               });
               break;
           }
@@ -150,10 +150,10 @@ export const adminRouter = router({
       return { success: true };
     }),
 
-  // Get all clients
-  getAllClients: adminProcedure
+  // Get all businesses
+  getAllBusinesses: adminProcedure
     .query(async () => {
-      return await db.query.client.findMany();
+      return await db.query.business.findMany();
     }),
 
   // Get all managers

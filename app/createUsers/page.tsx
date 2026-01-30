@@ -64,7 +64,7 @@ const CreateUserPage = () => {
     };
 
     // Add role-specific fields
-    if (selectedRole === 'client') {
+    if (selectedRole === 'business') {
       userData.businessName = formData.get('businessName') as string;
       userData.businessType = formData.get('businessType') as string;
       userData.subscriptionPack = formData.get('subscriptionPack') as string;
@@ -73,7 +73,7 @@ const CreateUserPage = () => {
       userData.targetQuota = Number(formData.get('quota'));
       userData.commissionRate = Number(formData.get('commission'));
     } else if (selectedRole === 'manager') {
-      userData.clientId = formData.get('clientId') as string;
+      userData.businessId = formData.get('businessId') as string;
     }
 
     createUser.mutate(userData);
@@ -99,7 +99,7 @@ const CreateUserPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
                   <SelectItem value="commercial">Commercial Agent</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                 </SelectContent>
@@ -144,8 +144,8 @@ const CreateUserPage = () => {
               </div>
             </div>
 
-            {/* Client-specific Fields */}
-            {selectedRole === 'client' && (
+            {/* Business-specific Fields */}
+            {selectedRole === 'business' && (
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="businessName">Business Name</Label>
@@ -215,10 +215,10 @@ const CreateUserPage = () => {
             {selectedRole === 'manager' && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="clientId">Client ID</Label>
+                  <Label htmlFor="businessId">Business ID</Label>
                   <Input 
-                    id="clientId" 
-                    name="clientId" 
+                    id="businessId" 
+                    name="businessId" 
                     required 
                   />
                 </div>

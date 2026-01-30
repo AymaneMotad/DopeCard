@@ -20,20 +20,85 @@ export default function ScannerPage() {
     { query: searchQuery },
     { enabled: searchQuery.length > 2 }
   );
+  const sendTestNotification = trpc.notifications.sendManual.useMutation({
+    onSuccess: (data) => {
+      alert(`✅ Notification queued! ${data.devicesNotified} device(s) will be notified.`);
+    },
+    onError: (error) => {
+      alert(`❌ Error: ${error.message}`);
+    },
+  });
+  const testDirectNotification = trpc.notifications.testDirect.useMutation({
+    onSuccess: (data) => {
+      alert(`✅ Direct notification sent! ${data.devicesNotified || 0} device(s) notified.`);
+    },
+    onError: (error) => {
+      alert(`❌ Error: ${error.message}`);
+    },
+  });
   const addStamps = trpc.scanner.addStamps.useMutation({
-    onSuccess: () => {
-      alert('Stamps added successfully!');
-      setSelectedCustomer(null);
-      setScanMode('scan');
+    onSuccess: (data) => {
+      alert(`Stamps added successfully! New total: ${data.newStampCount}`);
+      // Refresh customer data
+      if (selectedCustomer) {
+        scanQR.mutate({ qrData: selectedCustomer.user.id }, {
+          onSuccess: (updatedData) => {
+            setSelectedCustomer(updatedData);
+          },
+        });
+      }
+    },
+    onError: (error) => {
+      alert(`Error: ${error.message}`);
     },
   });
   const redeemReward = trpc.scanner.redeemReward.useMutation({
-    onSuccess: () => {
-      alert('Reward redeemed!');
-      setSelectedCustomer(null);
-      setScanMode('scan');
+    onSuccess: (data) => {
+      alert(`Reward redeemed! New total: ${data.newStampCount} stamps`);
+      // Refresh customer data
+      if (selectedCustomer) {
+        scanQR.mutate({ qrData: selectedCustomer.user.id }, {
+          onSuccess: (updatedData) => {
+            setSelectedCustomer(updatedData);
+          },
+        });
+      }
+    },
+    onError: (error) => {
+      alert(`Error: ${error.message}`);
     },
   });
+
+  // Check if input looks like a UUID or QR code data
+  const isUUIDOrQRCode = (input: string): boolean => {
+    const trimmed = input.trim();
+    // UUID format: 8-4-4-4-12 hex characters
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // Or COFFEE/USER prefix
+    const prefixRegex = /^(COFFEE|USER)[0-9a-f-]+$/i;
+    return uuidRegex.test(trimmed) || prefixRegex.test(trimmed) || trimmed.length > 30;
+  };
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+
+    // If it looks like a UUID or QR code, use scanQR
+    if (isUUIDOrQRCode(searchQuery)) {
+      scanQR.mutate({ qrData: searchQuery.trim() }, {
+        onSuccess: (data) => {
+          setSelectedCustomer(data);
+          setScanMode('customer');
+          setSearchQuery('');
+        },
+        onError: (error) => {
+          alert(`Error: ${error.message}`);
+        },
+      });
+    } else {
+      // Otherwise, show lookup results
+      setScanMode('lookup');
+    }
+  };
 
   const handleScan = async () => {
     // In a real implementation, you would use a QR code scanner library
@@ -104,23 +169,33 @@ export default function ScannerPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label>Search by name, email, or phone</Label>
+                    <Label>Search by name, email, phone, or UUID/QR code</Label>
                     <div className="flex gap-2">
                       <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSearch();
+                          }
+                        }}
+                        placeholder="Search or paste UUID/QR code..."
                       />
                       <Button
-                        onClick={() => setScanMode('lookup')}
-                        disabled={!lookupCustomer.data || lookupCustomer.data.length === 0}
+                        onClick={handleSearch}
+                        disabled={!searchQuery.trim()}
                       >
                         <Search className="h-4 w-4" />
                       </Button>
                     </div>
+                    {isUUIDOrQRCode(searchQuery) && searchQuery.trim() && (
+                      <p className="text-sm text-blue-600 mt-2">
+                        Detected UUID/QR code - will search by ID
+                      </p>
+                    )}
                   </div>
                   
-                  {lookupCustomer.data && lookupCustomer.data.length > 0 && (
+                  {lookupCustomer.data && lookupCustomer.data.length > 0 && !isUUIDOrQRCode(searchQuery) && (
                     <div className="space-y-2">
                       {lookupCustomer.data.map((customer: any) => (
                         <div
@@ -148,21 +223,94 @@ export default function ScannerPage() {
           </div>
         )}
 
+        {/* Lookup Mode - Show search results */}
+        {scanMode === 'lookup' && !isUUIDOrQRCode(searchQuery) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Search Results</CardTitle>
+              <CardDescription>Select a customer to view their pass</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {lookupCustomer.isLoading && (
+                <p className="text-center py-4">Searching...</p>
+              )}
+              {lookupCustomer.data && lookupCustomer.data.length > 0 ? (
+                <div className="space-y-2">
+                  {lookupCustomer.data.map((customer: any) => (
+                    <div
+                      key={customer.id}
+                      className="p-3 border rounded cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        scanQR.mutate({ qrData: `USER${customer.id}` }, {
+                          onSuccess: (data) => {
+                            setSelectedCustomer(data);
+                            setScanMode('customer');
+                            setSearchQuery('');
+                          },
+                        });
+                      }}
+                    >
+                      <div className="font-medium">{customer.username}</div>
+                      <div className="text-sm text-gray-600">{customer.email}</div>
+                      {customer.phoneNumber && (
+                        <div className="text-sm text-gray-500">{customer.phoneNumber}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : lookupCustomer.data && lookupCustomer.data.length === 0 ? (
+                <p className="text-center py-4 text-gray-500">No customers found</p>
+              ) : null}
+              <Button
+                onClick={() => {
+                  setScanMode('scan');
+                  setSearchQuery('');
+                }}
+                variant="outline"
+                className="w-full mt-4"
+              >
+                Back to Scan
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {scanQR.isLoading && (
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p>Loading customer data...</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer View */}
-        {scanMode === 'customer' && selectedCustomer && (
+        {scanMode === 'customer' && selectedCustomer && !scanQR.isLoading && (
           <Card>
             <CardHeader>
               <CardTitle>{selectedCustomer.user.username}</CardTitle>
               <CardDescription>
-                {selectedCustomer.user.email} • {selectedCustomer.user.phoneNumber}
+                {selectedCustomer.user.email} • {selectedCustomer.user.phoneNumber || 'No phone'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center p-6 bg-blue-50 rounded-lg">
                 <div className="text-4xl font-bold text-blue-600">
-                  {selectedCustomer.pass.stampCount}
+                  {selectedCustomer.pass.stampCount || 0}
                 </div>
                 <div className="text-gray-600 mt-2">Stamps</div>
+                {selectedCustomer.deviceRegistrations !== undefined && (
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <div className="text-sm text-gray-600">
+                      Devices registered: <span className="font-semibold">{selectedCustomer.deviceRegistrations}</span>
+                    </div>
+                    {selectedCustomer.deviceRegistrations === 0 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ No devices registered. Configure webServiceURL in pass generation for push notifications.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -203,6 +351,51 @@ export default function ScannerPage() {
                     <Gift className="h-4 w-4 mr-2" />
                     Redeem Reward (10 stamps)
                   </Button>
+                </div>
+
+                <div className="border-t pt-4">
+                  <Label className="text-sm font-semibold mb-2 block">Test Push Notification</Label>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => {
+                        sendTestNotification.mutate({
+                          passId: selectedCustomer.pass.id,
+                          title: 'Test Notification',
+                          message: `Test push notification for ${selectedCustomer.user.username}. Current stamps: ${selectedCustomer.pass.stampCount}`,
+                        });
+                      }}
+                      disabled={sendTestNotification.isLoading}
+                      className="w-full"
+                      variant="secondary"
+                    >
+                      📱 Send via QStash (Production)
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        testDirectNotification.mutate({
+                          passId: selectedCustomer.pass.id,
+                          title: 'Test Notification',
+                          message: `Direct test notification for ${selectedCustomer.user.username}. Current stamps: ${selectedCustomer.pass.stampCount}`,
+                        });
+                      }}
+                      disabled={testDirectNotification.isLoading}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      ⚡ Send Direct (Test - Bypasses QStash)
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {selectedCustomer.deviceRegistrations === 0 ? (
+                      <>
+                        ⚠️ No devices registered. To test: Configure webServiceURL in pass generation, or use direct test with pushToken.
+                      </>
+                    ) : (
+                      <>
+                        ✅ {selectedCustomer.deviceRegistrations} device(s) registered. Notifications will be sent.
+                      </>
+                    )}
+                  </p>
                 </div>
 
                 <Button

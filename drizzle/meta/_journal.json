@@ -15,6 +15,13 @@
       "when": 1763134668689,
       "tag": "0001_flippant_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764984000000,
+      "tag": "0004_rename_clients_to_businesses",
+      "breakpoints": true
     }
   ]
 }

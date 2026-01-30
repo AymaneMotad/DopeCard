@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../trpc";
 import { z } from "zod";
 import { db } from "@/db/drizzle";
-import { passRegistrations, users, userPasses, passTemplates } from "@/db/schema";
+import { passRegistrations, users, userPasses, passTemplates, customer } from "@/db/schema";
 import { generatePass, generateGooglePass } from '../../app/utils/pass-generation/pass-generation';
 import { detectPlatform } from '@/modules/pass-generation';
 import { v4 as uuidv4 } from 'uuid';
@@ -83,7 +83,7 @@ export const usersRouter = router({
                     username: input.username,
                     email: input.email,
                     phoneNumber: input.phoneNumber,
-                    role: 'client', // Default role for customers
+                    role: 'customer', // Default role for customer registrations
                 }).returning();
 
                 const userId = userResult[0].id;
@@ -106,6 +106,11 @@ export const usersRouter = router({
                 const cardType = template.cardType || 'stamp';
                 const design = template.design as any || {};
                 const settings = template.settings as any || {};
+                const businessId = (template as any).businessId;
+
+                if (!businessId) {
+                    throw new Error('Card template is missing business ownership.');
+                }
                 
                 // Get initial values from settings (new users start with 0, but threshold comes from settings)
                 const initialStamps = settings.initialStamps ?? 0; // Start with initial stamps if set, otherwise 0
@@ -174,6 +179,15 @@ export const usersRouter = router({
                     cardNumber: serialNumber, // Use serial number as card number
                     tagline: settings.tagline || '',
                 };
+
+                // Create customer record linked to business
+                await db.insert(customer).values({
+                    userId: userId,
+                    email: input.email,
+                    phoneNumber: input.phoneNumber,
+                    username: input.username,
+                    businessId: businessId,
+                });
 
                 // Create userPass record with complete metadata
                 const [userPass] = await db.insert(userPasses).values({

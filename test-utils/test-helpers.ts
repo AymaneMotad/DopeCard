@@ -27,7 +27,7 @@ export const mockUser = {
   email: 'test@example.com',
   username: 'testuser',
   phoneNumber: '+1234567890',
-  role: 'client' as const,
+  role: 'customer' as const,
   active: true,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
@@ -39,7 +39,7 @@ export const mockUser = {
 export const mockCustomer = {
   ...mockUser,
   referralCode: 'TEST123',
-  clientId: 'test-client-id',
+  businessId: 'test-business-id',
 };
 
 /**

@@ -5,20 +5,105 @@ import { trpc } from "@/server/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, Mail, Phone } from "lucide-react";
+import { Search, User, Mail, Phone, Trash2 } from "lucide-react";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CustomersPage() {
   const [search, setSearch] = useState("");
-  const { data: customers, isLoading } = trpc.customers.getAll.useQuery({
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+  
+  const { data: customers, isLoading, refetch } = trpc.customers.getAll.useQuery({
     search: search || undefined,
     limit: 50,
   });
+
+  const deleteAllMutation = trpc.customers.deleteAllTestUsers.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Test Users Deleted",
+        description: `Deleted ${data.deleted.users} users, ${data.deleted.passes} passes, ${data.deleted.registrations} device registrations, and ${data.deleted.updates} pass updates.`,
+        variant: "default",
+      });
+      refetch();
+      setIsDeleting(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "❌ Deletion Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsDeleting(false);
+    },
+  });
+
+  const handleDeleteAll = async () => {
+    setIsDeleting(true);
+    deleteAllMutation.mutate();
+  };
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Customers</h1>
+        
+        {/* Delete All Test Users Button - For Testing Only */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {isDeleting ? "Deleting..." : "Delete All Test Users"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>⚠️ Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p className="font-semibold text-red-600">
+                  This will permanently delete ALL customer test data:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>All customer users (registered customers)</li>
+                  <li>All issued passes</li>
+                  <li>All device registrations</li>
+                  <li>All pass update history</li>
+                </ul>
+                <p className="text-sm text-green-600 mt-2 font-semibold">
+                  ✅ Safe: Admin, commercial, and manager accounts will NOT be deleted
+                </p>
+                <p className="text-sm text-gray-600">
+                  This action cannot be undone. Only use this during testing.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAll}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Yes, Delete Everything
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Card className="mb-6">

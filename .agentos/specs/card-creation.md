@@ -56,7 +56,7 @@ Focus on essential features only - avoid bloat.
 
 Uses existing `passTemplates` table:
 - `id`: UUID primary key
-- `clientId`: Reference to client
+- `businessId`: Reference to business
 - `name`: Template name
 - `type`: Card type enum
 - `design`: JSONB for design settings
@@ -71,7 +71,7 @@ Procedures:
 - `create`: Create new card template
 - `getById`: Get card template details
 - `update`: Update card template
-- `list`: List all cards for a client
+- `list`: List all cards for a business
 - `activate`: Activate a card
 - `deactivate`: Deactivate a card
 
@@ -113,7 +113,7 @@ Use React state or Zustand for:
 ### Business Rules
 - Stamp count: 2-50 stamps
 - Expiration date: Must be in future (if set)
-- Card name: Unique per client
+- Card name: Unique per business
 
 ## Integration with Pass Generation
 

@@ -10,7 +10,7 @@
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'admin' | 'commercial' | 'client' | 'manager';
+  role: 'admin' | 'commercial' | 'business' | 'manager' | 'customer';
 }
 
 export interface Session {

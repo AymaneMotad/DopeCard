@@ -222,9 +222,24 @@ export async function generatePass(
         const storeCardFields = mapCardTypeToStoreCardFields(cardType, cardDataWithDefaults);
 
         // Get base URL for web service
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}` 
-            : 'http://localhost:3000';
+        // Priority: APP_URL (server-side) > NEXT_PUBLIC_APP_URL (client/server) > localhost
+        const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        
+        // Check if webServiceURL should be enabled
+        // Set ENABLE_WEB_SERVICE_URL=true in .env to enable device registration
+        const enableWebService = process.env.ENABLE_WEB_SERVICE_URL === 'true';
+        
+        console.log('═════════════════════════════════════════════════════');
+        console.log('🔧 PASS GENERATION CONFIGURATION');
+        console.log('═════════════════════════════════════════════════════');
+        console.log('📍 Base URL (webServiceURL):', baseUrl);
+        console.log('🔐 ENABLE_WEB_SERVICE_URL:', enableWebService);
+        console.log('🔑 PASS_AUTH_TOKEN exists:', !!process.env.PASS_AUTH_TOKEN);
+        console.log('🆔 User ID:', userId);
+        console.log('🎫 Serial Number:', `COFFEE${userId}`);
+        console.log('📊 Card Type:', cardType);
+        console.log('⭐ Initial Stamps:', cardDataWithDefaults.stampCount);
+        console.log('═════════════════════════════════════════════════════');
 
         // Create storeCard pass JSON
         // Using storeCard pass type for all card types
@@ -233,9 +248,12 @@ export async function generatePass(
             serialNumber: `COFFEE${userId}`,
             passTypeIdentifier: 'pass.com.dopecard.passmaker',
             teamIdentifier: 'DTWNQT4JQL',
-            // webServiceURL commented out for debugging - Apple Wallet may reject HTTP URLs
-            // webServiceURL: `${baseUrl}/api/passes/v1`,
-            // authenticationToken: process.env.PASS_AUTH_TOKEN || 'default-token-change-in-production',
+            // webServiceURL: Enable for device registration and push notifications
+            // Only include if ENABLE_WEB_SERVICE_URL=true and not localhost OR if using ngrok/tunnel
+            ...(enableWebService && process.env.PASS_AUTH_TOKEN ? {
+                webServiceURL: `${baseUrl}/api/passes/v1`,
+                authenticationToken: process.env.PASS_AUTH_TOKEN,
+            } : {}),
             description: cardData?.cardTitle || 'Loyalty Card',
             organizationName: cardData?.businessName || 'Brew Rewards',
             logoText: cardData?.businessName || 'Brew Rewards',
@@ -258,7 +276,16 @@ export async function generatePass(
         };
 
         // Validate pass.json structure for storeCard pass type
-        console.log('Validating pass.json structure...');
+        console.log('═════════════════════════════════════════════════════');
+        console.log('✅ PASS.JSON VALIDATION');
+        console.log('═════════════════════════════════════════════════════');
+        console.log('🎫 Serial Number:', passJson.serialNumber);
+        console.log('🔖 Pass Type ID:', passJson.passTypeIdentifier);
+        console.log('👥 Team ID:', passJson.teamIdentifier);
+        console.log('🌐 WebService URL:', passJson.webServiceURL || '❌ DISABLED');
+        console.log('🔐 Auth Token:', passJson.authenticationToken ? '✅ SET (length: ' + passJson.authenticationToken.length + ')' : '❌ NOT SET');
+        console.log('═════════════════════════════════════════════════════');
+        
         if (!passJson.serialNumber || !passJson.passTypeIdentifier || !passJson.teamIdentifier) {
             throw new Error('Pass JSON missing required fields: serialNumber, passTypeIdentifier, or teamIdentifier');
         }
@@ -267,6 +294,24 @@ export async function generatePass(
         }
         if (!passJson.barcode || !passJson.barcode.message || !passJson.barcode.format) {
             throw new Error('Pass JSON missing required barcode fields');
+        }
+        if (passJson.webServiceURL && !passJson.authenticationToken) {
+            throw new Error('Pass JSON has webServiceURL but missing authenticationToken');
+        }
+        
+        if (!enableWebService) {
+            console.log('⚠️  ⚠️  ⚠️  WARNING: webServiceURL DISABLED ⚠️  ⚠️  ⚠️');
+            console.log('📱 Device registration will NOT work');
+            console.log('🔔 Push notifications will NOT work');
+            console.log('💡 To enable: Set ENABLE_WEB_SERVICE_URL=true in .env');
+            console.log('💡 Requires: HTTPS URL (ngrok, Vercel, etc.)');
+            console.log('═════════════════════════════════════════════════════');
+        } else {
+            console.log('✅ webServiceURL ENABLED - Device registration will work');
+            console.log('📍 Registration endpoint:');
+            console.log(`   POST ${passJson.webServiceURL}/devices/{deviceId}/registrations/${passJson.passTypeIdentifier}/${passJson.serialNumber}`);
+            console.log('🔑 Authorization: ApplePass ' + (passJson.authenticationToken ? passJson.authenticationToken.substring(0, 20) + '...' : 'MISSING'));
+            console.log('═════════════════════════════════════════════════════');
         }
         console.log('Pass.json structure validated successfully.');
         console.log('Pass type: storeCard');

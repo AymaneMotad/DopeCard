@@ -32,11 +32,7 @@ npm run dev
 
 ## 📚 Documentation
 
-- **Routes**: See [ROUTES_REFERENCE.md](./ROUTES_REFERENCE.md) - Complete route guide
-- **Setup**: See [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Detailed setup instructions
-- **Quick Start**: See [QUICK_START.md](./QUICK_START.md) - Get started fast
-- **Database**: See [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) - Migration guide
-- **Implementation**: See [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - What's built
+- **Project Overview**: See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) - Current architecture, flows, and status
 
 ## 🎯 Key Features
 
@@ -84,7 +80,7 @@ npm run test:coverage # Coverage report
 
 ## 📝 Environment Variables
 
-See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for complete list.
+See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for the current setup checklist.
 
 Required:
 - `DATABASE_URL` - Neon PostgreSQL connection string
@@ -119,8 +115,6 @@ This project uses spec-driven development with Agent OS:
 - Specs: `.agentos/specs/`
 - UI Elements: `.agentos/ui-elements/`
 
-See [AGENTOS_INTEGRATION_GUIDE.md](./AGENTOS_INTEGRATION_GUIDE.md) for details.
-
 ## 🚢 Deployment
 
 Deployed on Vercel with:
@@ -131,6 +125,4 @@ Deployed on Vercel with:
 ## 📞 Support
 
 For issues or questions, check:
-1. [ROUTES_REFERENCE.md](./ROUTES_REFERENCE.md) - Route documentation
-2. [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Setup troubleshooting
-3. [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) - Database issues
+1. [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) - System overview and flow

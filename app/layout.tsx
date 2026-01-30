@@ -4,6 +4,7 @@ import "./globals.css";
 import { TRPCProvider } from "@/components/ui/trpc-provider";
 import { Providers } from "./providers";
 import { ConditionalLayout } from "@/components/layout/conditional-layout";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -38,6 +39,7 @@ export default function RootLayout({
               {children}
             </TRPCProvider>
           </ConditionalLayout>
+          <Toaster />
         </Providers>
       </body>
     </html>

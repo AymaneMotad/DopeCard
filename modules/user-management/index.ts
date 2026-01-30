@@ -12,7 +12,7 @@ export interface User {
   email: string;
   username: string;
   phoneNumber?: string;
-  role: 'admin' | 'commercial' | 'client' | 'manager';
+  role: 'admin' | 'commercial' | 'business' | 'manager' | 'customer';
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -21,7 +21,7 @@ export interface User {
 export interface Customer extends User {
   referralCode?: string;
   referredBy?: string;
-  clientId?: string;
+  businessId?: string;
 }
 
 // Placeholder exports - will be implemented as features are refactored
