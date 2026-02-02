@@ -11,7 +11,7 @@ import { db } from "@/db/drizzle";
 import { passRegistrations, userPasses } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { enqueueNotification } from "@/lib/qstash";
-import { sendAPNS } from "@/lib/apns";
+import { sendWalletPush } from "@/lib/apns";
 
 export const notificationsRouter = router({
   // Send manual push notification (enqueues to QStash)
@@ -65,14 +65,13 @@ export const notificationsRouter = router({
       };
     }),
 
-  // Test notification directly (bypasses QStash for immediate testing)
+  // Test Wallet push directly (bypasses QStash for immediate testing)
+  // NOTE: For Apple Wallet, this sends an EMPTY push that signals the device to fetch the updated pass
   testDirect: protectedProcedure
     .input(
       z.object({
         passId: z.string().uuid(),
         pushToken: z.string().optional(), // Optional: for testing without registered device
-        title: z.string().min(1).max(100).optional(),
-        message: z.string().min(1).max(255),
       })
     )
     .mutation(async ({ input }) => {
@@ -91,17 +90,20 @@ export const notificationsRouter = router({
       // If pushToken provided, use it directly (for testing)
       if (input.pushToken) {
         try {
-          await sendAPNS({
-            token: input.pushToken,
-            title: input.title || 'Test Notification',
-            body: input.message,
-          });
+          const result = await sendWalletPush(input.pushToken);
+          if (!result.success) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Failed to send Wallet push: ${result.error}`,
+            });
+          }
           return {
             success: true,
-            message: 'Direct notification sent (test mode)',
+            message: 'Wallet push sent (test mode) - device will fetch updated pass',
             note: 'This bypasses device registration. Use sendManual for production.',
           };
         } catch (error) {
+          if (error instanceof TRPCError) throw error;
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: `Failed to send notification: ${error instanceof Error ? error.message : String(error)}`,
@@ -121,17 +123,17 @@ export const notificationsRouter = router({
         });
       }
 
-      // Send directly to all registered devices
+      // Send Wallet push to all registered iOS devices
       const results = await Promise.allSettled(
-        registrations.map(async (reg) => {
-          if (reg.platform === 'ios') {
-            await sendAPNS({
-              token: reg.pushToken,
-              title: input.title || 'Test Notification',
-              body: input.message,
-            });
-          }
-        })
+        registrations
+          .filter(reg => reg.platform === 'ios')
+          .map(async (reg) => {
+            const result = await sendWalletPush(reg.pushToken);
+            if (!result.success) {
+              throw new Error(result.error);
+            }
+            return result;
+          })
       );
 
       const successful = results.filter(r => r.status === 'fulfilled').length;
@@ -141,8 +143,8 @@ export const notificationsRouter = router({
         success: true,
         devicesNotified: successful,
         devicesFailed: failed,
-        totalDevices: registrations.length,
-        message: 'Direct notification sent (bypassing QStash)',
+        totalDevices: registrations.filter(r => r.platform === 'ios').length,
+        message: 'Wallet push sent - devices will fetch updated passes',
       };
     }),
 

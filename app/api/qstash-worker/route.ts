@@ -10,7 +10,7 @@ import { verifySignature } from "@upstash/qstash/nextjs";
 import { db } from '@/db/drizzle';
 import { passRegistrations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { sendAPNS } from '@/lib/apns';
+import { sendWalletPush } from '@/lib/apns';
 import { sendFCM } from '@/lib/fcm';
 
 export async function POST(req: NextRequest) {
@@ -60,14 +60,14 @@ export async function POST(req: NextRequest) {
     const sendPromises = registrations.map(async (registration) => {
       try {
         if (registration.platform === 'ios') {
-          await sendAPNS({
-            token: registration.pushToken,
-            title,
-            body,
-            link,
-          });
+          // For Apple Wallet, send empty push (signals device to fetch updated pass)
+          const result = await sendWalletPush(registration.pushToken);
+          if (!result.success) {
+            return { success: false, platform: 'ios', error: result.error };
+          }
           return { success: true, platform: 'ios' };
         } else if (registration.platform === 'android') {
+          // For Android/Google Pay, send FCM notification
           await sendFCM({
             token: registration.pushToken,
             title,
