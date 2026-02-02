@@ -889,6 +889,13 @@ export default function TestCardPage() {
               </p>
               <Button
                 onClick={() => {
+                  console.log('═══════════════════════════════════════');
+                  console.log('🎯 FRONTEND: Generating test pass');
+                  console.log('   formData.cardType:', formData.cardType);
+                  console.log('   formData.stampCount (threshold):', formData.stampCount);
+                  console.log('   formData.initialStamps:', formData.initialStamps);
+                  console.log('═══════════════════════════════════════');
+                  
                   generateTestPass.mutate({
                     cardType: formData.cardType,
                     stampCount: formData.stampCount,

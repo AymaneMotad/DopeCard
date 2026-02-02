@@ -34,6 +34,7 @@ function CreateCardPageContent() {
     // Step 2: Settings
     expiration: 'none' as string,
     language: 'en',
+    initialStamps: 0,
     
     // Step 3: Design
     logo: '',
@@ -71,6 +72,7 @@ function CreateCardPageContent() {
           backgroundColor: template.preview.backgroundColor,
           textColor: template.preview.foregroundColor,
           accentColor: template.preview.accentColor,
+          initialStamps: 0,
           rewardDetails: {
             ...prev.rewardDetails,
             ...(template.defaults.stampCount && { stampCount: template.defaults.stampCount }),
@@ -412,6 +414,24 @@ function CreateCardPageContent() {
                         rewardDetails: { ...formData.rewardDetails, stampCount: parseInt(e.target.value) || 10 }
                       })}
                       placeholder="10"
+                    />
+                  </div>
+                )}
+
+                {formData.type === 'stamp' && (
+                  <div>
+                    <Label htmlFor="initialStamps">Initial Stamps (starting balance)</Label>
+                    <Input
+                      id="initialStamps"
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={formData.initialStamps}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        initialStamps: Math.max(0, parseInt(e.target.value) || 0),
+                      })}
+                      placeholder="0"
                     />
                   </div>
                 )}

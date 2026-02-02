@@ -251,7 +251,7 @@ export async function generatePass(
             // webServiceURL: Enable for device registration and push notifications
             // Only include if ENABLE_WEB_SERVICE_URL=true and not localhost OR if using ngrok/tunnel
             ...(enableWebService && process.env.PASS_AUTH_TOKEN ? {
-                webServiceURL: `${baseUrl}/api/passes/v1`,
+                webServiceURL: `${baseUrl}/api/passes`,
                 authenticationToken: process.env.PASS_AUTH_TOKEN,
             } : {}),
             description: cardData?.cardTitle || 'Loyalty Card',
@@ -308,8 +308,8 @@ export async function generatePass(
             console.log('═════════════════════════════════════════════════════');
         } else {
             console.log('✅ webServiceURL ENABLED - Device registration will work');
-            console.log('📍 Registration endpoint:');
-            console.log(`   POST ${passJson.webServiceURL}/devices/{deviceId}/registrations/${passJson.passTypeIdentifier}/${passJson.serialNumber}`);
+            console.log('📍 Registration endpoint (Apple adds /v1):');
+            console.log(`   POST ${passJson.webServiceURL}/v1/devices/{deviceId}/registrations/${passJson.passTypeIdentifier}/${passJson.serialNumber}`);
             console.log('🔑 Authorization: ApplePass ' + (passJson.authenticationToken ? passJson.authenticationToken.substring(0, 20) + '...' : 'MISSING'));
             console.log('═════════════════════════════════════════════════════');
         }

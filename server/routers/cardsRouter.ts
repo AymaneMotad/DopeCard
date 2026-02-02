@@ -23,6 +23,7 @@ const cardCreationSchema = z.object({
   
   // Card-type-specific settings
   stampCount: z.number().min(2).max(50).optional(),
+  initialStamps: z.number().min(0).max(50).optional(),
   pointsRate: z.number().min(1).max(10).optional(),
   discountTiers: z.array(z.number()).optional(),
   discountPercentage: z.number().min(0).max(100).optional(),
@@ -137,6 +138,7 @@ export const cardsRouter = router({
             businessName: input.businessName,
             // Card-type-specific settings
             stampCount: input.stampCount,
+          initialStamps: input.initialStamps,
             pointsRate: input.pointsRate,
             discountTiers: input.discountTiers,
             discountPercentage: input.discountPercentage,
@@ -307,6 +309,15 @@ export const cardsRouter = router({
         ...(input.data.terms !== undefined && { terms: input.data.terms }),
         ...(input.data.description !== undefined && { description: input.data.description }),
         ...(input.data.businessName !== undefined && { businessName: input.data.businessName }),
+        // Card-type-specific settings - MUST be included for updates to work!
+        ...(input.data.stampCount !== undefined && { stampCount: input.data.stampCount }),
+        ...(input.data.initialStamps !== undefined && { initialStamps: input.data.initialStamps }),
+        ...(input.data.pointsRate !== undefined && { pointsRate: input.data.pointsRate }),
+        ...(input.data.discountTiers !== undefined && { discountTiers: input.data.discountTiers }),
+        ...(input.data.discountPercentage !== undefined && { discountPercentage: input.data.discountPercentage }),
+        ...(input.data.cashbackPercentage !== undefined && { cashbackPercentage: input.data.cashbackPercentage }),
+        ...(input.data.balance !== undefined && { balance: input.data.balance }),
+        ...(input.data.classesPerMonth !== undefined && { classesPerMonth: input.data.classesPerMonth }),
       };
 
       const [updated] = await db.update(passTemplates)

@@ -103,8 +103,8 @@ export const passesRouter = router({
     .input(
       z.object({
         cardType: z.enum(["stamp", "points", "discount", "cashback", "multipass", "coupon", "reward", "membership", "gift"]),
-        stampCount: z.number().min(2).max(50).optional(),
-        initialStamps: z.number().min(0).optional(),
+        stampCount: z.number().min(2).max(50).optional().default(10),
+        initialStamps: z.number().min(0).optional().default(0),
         pointsRate: z.number().min(1).max(10).optional(),
         pointsBalance: z.number().min(0).optional(),
         discountTiers: z.array(z.number()).optional(),
@@ -182,6 +182,12 @@ export const passesRouter = router({
         console.log('═════════════════════════════════════════════════════');
         console.log('🧪 TEST PASS GENERATION');
         console.log('═════════════════════════════════════════════════════');
+        console.log('📥 INPUT VALUES RECEIVED:');
+        console.log('   cardType:', input.cardType);
+        console.log('   stampCount (threshold):', input.stampCount);
+        console.log('   initialStamps:', input.initialStamps);
+        console.log('   typeof initialStamps:', typeof input.initialStamps);
+        console.log('═════════════════════════════════════════════════════');
         console.log('📝 Creating test user...');
         
         const userResult = await db.insert(users).values({
@@ -215,6 +221,14 @@ export const passesRouter = router({
         };
 
         // Prepare card data based on card type - MUST include all design fields to match preview
+        // IMPORTANT: Use ?? instead of || to properly handle 0 values
+        const initialStampsValue = input.initialStamps ?? 0;
+        const stampThresholdValue = input.stampCount ?? 10;
+        
+        console.log('📊 CARD DATA VALUES:');
+        console.log('   initialStampsValue (stampCount for pass):', initialStampsValue);
+        console.log('   stampThresholdValue (total needed):', stampThresholdValue);
+        
         const cardData = {
           // Visual design fields - these MUST match the preview
           cardTitle: input.cardTitle,
@@ -228,31 +242,37 @@ export const passesRouter = router({
           logo: DEFAULT_ASSETS.logo,
           icon: DEFAULT_ASSETS.icon,
           strip: DEFAULT_ASSETS.strip,
-          // Card type specific fields
-          stampCount: input.initialStamps || 0,
-          stampThreshold: input.stampCount || 10,
+          // Card type specific fields - stampCount is the CURRENT stamps (initialStamps from UI)
+          stampCount: initialStampsValue,
+          stampThreshold: stampThresholdValue,
           rewardsCollected: 0,
-          pointsBalance: input.pointsBalance || input.initialStamps || 0,
-          pointsRate: input.pointsRate || 1,
-          discountPercentage: input.discountPercentage || 0,
-          cashbackPercentage: input.cashbackPercentage || 0,
-          cashbackEarned: input.cashbackEarned || 0,
-          balance: input.balance || 0,
-          visits: input.visits || 0,
-          classesPerMonth: input.classesPerMonth || 0,
+          pointsBalance: input.pointsBalance ?? initialStampsValue,
+          pointsRate: input.pointsRate ?? 1,
+          discountPercentage: input.discountPercentage ?? 0,
+          cashbackPercentage: input.cashbackPercentage ?? 0,
+          cashbackEarned: input.cashbackEarned ?? 0,
+          balance: input.balance ?? 0,
+          visits: input.visits ?? 0,
+          classesPerMonth: input.classesPerMonth ?? 0,
           expirationDate: input.expirationDate || input.endDate,
           offerDescription: input.offerDescription,
         };
+        
+        console.log('📊 CARD DATA OBJECT:');
+        console.log('   cardData.stampCount:', cardData.stampCount);
+        console.log('   cardData.stampThreshold:', cardData.stampThreshold);
 
         // Create userPass record (same as Registration route)
         console.log('📝 Creating pass record in database...');
+        console.log('   Saving stampCount to metadata:', initialStampsValue);
         const [userPass] = await db.insert(userPasses).values({
           userId: userId,
           templateId: null,
           serialNumber: serialNumber,
           status: 'active',
           metadata: {
-            stampCount: input.initialStamps || 0,
+            stampCount: initialStampsValue, // Use the correctly parsed value
+            stampThreshold: stampThresholdValue,
             createdAt: new Date().toISOString(),
             cardType: input.cardType,
             cardTitle: input.cardTitle,
@@ -267,7 +287,9 @@ export const passesRouter = router({
         console.log('   User ID:', userPass.userId);
         console.log('   Status:', userPass.status);
         console.log('   Card Type:', input.cardType);
-        console.log('   Initial Stamps:', input.initialStamps || 0);
+        console.log('   Stamps in DB (initialStamps):', initialStampsValue);
+        console.log('   Stamp Threshold in DB:', stampThresholdValue);
+        console.log('   Metadata stampCount:', (userPass.metadata as any)?.stampCount);
         console.log('═════════════════════════════════════════════════════');
 
         let passBuffer;
@@ -275,9 +297,15 @@ export const passesRouter = router({
         if (detectedPlatform === 'ios') {
           // Use the same generatePass function as Registration route
           // Pass card type and card data for storeCard generation
+          console.log('📱 Calling generatePass with:');
+          console.log('   userId:', userId);
+          console.log('   stampCount param:', initialStampsValue);
+          console.log('   cardType:', input.cardType);
+          console.log('   cardData.stampCount:', cardData.stampCount);
+          
           passBuffer = await generatePass(
             userId, 
-            input.initialStamps || 0,
+            initialStampsValue, // Use the correctly parsed value
             input.cardType,
             cardData
           );

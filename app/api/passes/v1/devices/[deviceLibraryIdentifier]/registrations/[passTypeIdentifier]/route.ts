@@ -11,6 +11,9 @@ import { passRegistrations, userPasses, passUpdates } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { verifyAuthToken } from '@/app/api/passes/v1/middleware';
 
+// Force Node.js runtime (not Edge) - required for Apple Wallet
+export const runtime = "nodejs";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { deviceLibraryIdentifier: string; passTypeIdentifier: string } }

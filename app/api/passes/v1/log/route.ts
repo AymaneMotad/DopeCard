@@ -7,12 +7,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force Node.js runtime (not Edge) - required for Apple Wallet
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
+  console.log('═════════════════════════════════════════════════════');
+  console.log('📋 APPLE WALLET LOG RECEIVED');
+  console.log('═════════════════════════════════════════════════════');
   try {
     const logs = await req.text();
     
     // Log errors for debugging
-    console.error('Apple Wallet Error Log:', logs);
+    console.log('📋 Log content:', logs);
+    console.log('═════════════════════════════════════════════════════');
     
     // You can also save logs to database or logging service here
     

@@ -3,6 +3,11 @@
  * 
  * Handles device registration for pass updates
  * POST /v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}
+ * 
+ * IMPORTANT: Apple Wallet requirements:
+ * - Body may be EMPTY or JSON with pushToken
+ * - Must return 201 (new) or 200 (existing), NOT 400/500
+ * - Authorization header: "ApplePass {token}"
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,6 +15,9 @@ import { db } from '@/db/drizzle';
 import { passRegistrations, userPasses } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyAuthToken } from '@/app/api/passes/v1/middleware';
+
+// Force Node.js runtime (not Edge) - required for Apple Wallet
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
@@ -41,19 +49,37 @@ export async function POST(
   try {
     const { deviceLibraryIdentifier, serialNumber } = params;
     
-    // Get push token from request body
-    const body = await req.text();
-    const pushToken = body || '';
-    console.log('🔑 Push Token Length:', pushToken.length);
-
-    if (!pushToken) {
-      console.error('❌ Push token missing in request body');
-      console.log('═════════════════════════════════════════════════════');
-      return NextResponse.json(
-        { error: 'Push token required' },
-        { status: 400 }
-      );
+    // IMPORTANT: Apple may send EMPTY body or JSON with pushToken
+    // We must handle BOTH cases - do NOT reject empty body!
+    let pushToken = '';
+    
+    try {
+      const bodyText = await req.text();
+      console.log('📦 Raw body received:', bodyText ? `"${bodyText.substring(0, 100)}..."` : '(empty)');
+      console.log('📦 Body length:', bodyText?.length || 0);
+      
+      if (bodyText && bodyText.trim()) {
+        // Try to parse as JSON
+        try {
+          const bodyJson = JSON.parse(bodyText);
+          pushToken = bodyJson.pushToken || '';
+          console.log('📦 Parsed JSON pushToken length:', pushToken.length);
+        } catch (parseError) {
+          // Not JSON, use raw text as pushToken
+          pushToken = bodyText.trim();
+          console.log('📦 Using raw text as pushToken, length:', pushToken.length);
+        }
+      } else {
+        console.log('📦 Body is empty - this is OK for Apple Wallet');
+      }
+    } catch (bodyError) {
+      console.log('📦 Could not read body (this is OK):', bodyError);
     }
+    
+    console.log('🔑 Final Push Token Length:', pushToken.length);
+    
+    // DO NOT reject if pushToken is empty - Apple may send empty body initially
+    // We'll still register the device, just without a push token
 
     // Find the pass by serial number
     console.log('🔍 Searching for pass in database...');
@@ -109,15 +135,17 @@ export async function POST(
     }
 
     // Create new registration
+    // IMPORTANT: Register even if pushToken is empty - Apple may provide it later
     console.log('✨ Creating NEW registration');
     console.log('   Pass ID:', pass.id);
     console.log('   Device ID:', deviceLibraryIdentifier);
     console.log('   Push Token Length:', pushToken.length);
+    console.log('   Push Token Present:', pushToken ? 'YES' : 'NO (will register anyway)');
     console.log('   Platform: ios');
     
     await db.insert(passRegistrations).values({
       passId: pass.id,
-      pushToken,
+      pushToken: pushToken || '', // Allow empty pushToken
       deviceLibraryIdentifier,
       platform: 'ios',
     });
